@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaseLink - Properties</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/properties.css">
+    <link rel="stylesheet" href="css/utils.css">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">LeaseLink</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="properties.html">Properties</a></li>
+                <li><a href="login.html">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Available Properties</h1>
+        
+        <div id="loading" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Loading properties...</p>
+        </div>
+        
+        <div id="properties-container" class="properties-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+            <!-- Properties will be loaded here -->
+        </div>
+        
+        <div id="error" class="alert alert-danger" style="display: none;">
+            <h4>Error</h4>
+            <p>Failed to load properties. Please try again later.</p>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 LeaseLink. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // Fetch properties from database
+        fetch('backend/get_properties.php')
+            .then(response => response.json())
+            .then(properties => {
+                document.getElementById('loading').style.display = 'none';
+                
+                if (properties.length === 0) {
+                    document.getElementById('error').style.display = 'block';
+                    document.getElementById('error').innerHTML = '<h4>No Properties Available</h4><p>No properties are currently listed.</p>';
+                } else {
+                    document.getElementById('properties-container').style.display = 'grid';
+                    
+                    properties.forEach(property => {
+                        const propertyCard = `
+                            <div class="property-card">
+                                <img src="${property.image_url}" class="property-image" alt="${property.title}">
+                                <div class="property-info">
+                                    <div class="property-title">${property.title}</div>
+                                    <div class="property-location">${property.location} • ${property.price}</div>
+                                    <a href="property-details.html?id=${property.id}" class="btn">View Details</a>
+                                </div>
+                            </div>
+                        `;
+                        document.getElementById('properties-container').innerHTML += propertyCard;
+                    });
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error').style.display = 'block';
+                console.error('Error:', error);
+            });
+    </script>
+</body>
+</html>
