@@ -26,19 +26,29 @@
 2. The project structure should be:
    ```
    LeaseLink/
+   ├── assets/
+   │   ├── aboutus.webp
+   │   └── perfecthome.webp
    ├── backend/
    │   ├── connect.php
-   │   ├── login.php
-   │   ├── register.php
+   │   ├── get_properties.php
    │   ├── get_property.php
-   │   └── get_properties.php
+   │   ├── login.php
+   │   └── register.php
+   ├── css/
+   │   ├── global.css
+   │   ├── login.css
+   │   ├── properties.css
+   │   └── utils.css
    ├── database/
    │   └── leaselink.sql
+   ├── forgot-password.html
    ├── index.html
-   ├── listings.html
    ├── login.html
+   ├── properties.html
    ├── property-details.html
-   └── style.css
+   ├── SETUP_GUIDE.md
+   └── test_database.php
    ```
 
 ### 4. Access the Application
@@ -135,4 +145,3 @@ If you encounter issues:
 2. Verify all services are running
 3. Check browser console for errors
 4. Ensure all files are in the correct locations
-
