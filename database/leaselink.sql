@@ -37,7 +37,7 @@ INSERT INTO properties (title, location, price, description, image_url) VALUES
 ('Studio Apartment', 'Madina', 'GHS 1,200 / month', 'Comfortable studio close to transport and markets.', 'https://placehold.co/600x400'),
 ('3 Bedroom Townhouse', 'Airport Residential', 'GHS 3,500 / month', 'Secure compound, parking and fenced yard.', 'https://placehold.co/600x400');
 
--- Insert a sample landlord and client (password = password123)
+-- Insert a sample landlord and client 
 INSERT INTO landlords (name, email, password) VALUES
 ('Ajak Pachol', 'landlord@example.com', '$2y$10$ObuyYgvTB0VtiI0qTIajf.wX2fTGMtl/GLfhj0QHQHnbVhPyeeUIe');
 -- prehased password for "password123"
