@@ -32,11 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($userFound && password_verify($password, $user['password'])) {
         $roleText = ($userType === 'landlords') ? 'Landlord' : 'Client';
-        echo 'Login successful! Welcome, ' . htmlspecialchars($user['name']) . ' (' . $roleText . '). (<a href="../index.html">Go to Home</a>)';
+        echo json_encode(['success' => true, 'message' => 'Login successful! Welcome, ' . htmlspecialchars($user['name']) . ' (' . $roleText . ').', 'userName' => htmlspecialchars($user['name'])]);
     } else if ($userFound) {
-        echo 'Invalid password. <a href="../login.html">Try again</a>';
+        echo json_encode(['success' => false, 'message' => 'Invalid password.']);
     } else {
-        echo 'User not found. <a href="../login.html">Register</a>';
+        echo json_encode(['success' => false, 'message' => 'User not found.']);
     }
 }
 ?>

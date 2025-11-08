@@ -15,10 +15,35 @@
             <ul class="nav-links">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="properties.html">Properties</a></li>
-                <li><a href="login.html">Login</a></li>
+                <li><a href="login.html" id="navAuthLink">Login</a></li>
             </ul>
         </nav>
     </header>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userName = localStorage.getItem('userName');
+            const navAuthLink = document.getElementById('navAuthLink');
+
+            if (userName) {
+                navAuthLink.innerHTML = `Welcome, ${userName}`;
+                navAuthLink.href = '#'; // Or a user dashboard link later
+                
+                // Add a logout link
+                const logoutLink = document.createElement('a');
+                logoutLink.href = '#';
+                logoutLink.textContent = 'Logout';
+                logoutLink.onclick = () => {
+                    localStorage.removeItem('userName');
+                    window.location.href = 'index.html'; // Redirect to home after logout
+                };
+                const logoutListItem = document.createElement('li');
+                logoutListItem.appendChild(logoutLink);
+                navAuthLink.parentNode.parentNode.appendChild(logoutListItem); // Add to ul
+
+            }
+        });
+    </script>
 
     <main>
         <section class="hero">

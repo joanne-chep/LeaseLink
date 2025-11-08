@@ -151,8 +151,30 @@
                 return;
             }
             
-            // For now just show a message
-            showMessage('Login feature will be connected to database soon!', 'success');
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('password', password);
+
+            fetch('backend/login.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json()) // Get response as JSON
+            .then(data => {
+                if (data.success) {
+                    showMessage(data.message, 'success');
+                    localStorage.setItem('userName', data.userName); // Store user name
+                    setTimeout(() => {
+                        window.location.href = 'index.html'; // Redirect to home page after a short delay
+                    }, 1500); // 1.5 second delay
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('An error occurred during login.', 'error');
+            });
         }
         
         function handleRegister(event) {
@@ -180,8 +202,32 @@
                 return;
             }
             
-            // For now, just show a message ,,will add a real user later
-            showMessage('Registration feature will be connected to database soon!', 'success');
+            const formData = new FormData();
+            formData.append('role', role);
+            formData.append('name', name);
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('confirm_password', confirm);
+
+            fetch('backend/register.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text()) // Get response as text
+            .then(data => {
+                // Check if the response contains "Registration Successful!"
+                if (data.includes("Registration Successful!")) {
+                    showMessage('Registration successful! You can now log in.', 'success');
+                    showLogin(); // Switch to login form
+                } else {
+                    // Display the full error message from the backend
+                    showMessage(data, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('An error occurred during registration.', 'error');
+            });
         }
         
         function showMessage(text, type) {
