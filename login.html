@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/login.css">
     <link rel="stylesheet" href="css/utils.css">
+    <script src="js/authGuard.js"></script>
 </head>
 <body>
     <header class="header">
@@ -55,8 +56,12 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Full Name:</label>
-                    <input type="text" id="registerName" required>
+                    <label>First Name:</label>
+                    <input type="text" id="registerFirstName" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name:</label>
+                    <input type="text" id="registerLastName" required>
                 </div>
                 <div class="form-group">
                     <label>Email:</label>
@@ -164,8 +169,20 @@
                 if (data.success) {
                     showMessage(data.message, 'success');
                     localStorage.setItem('userName', data.userName); // Store user name
+                    localStorage.setItem('userType', data.userType); // Store user type
+                    localStorage.setItem('userId', data.userId); // Store user ID
+
+                    let redirectUrl = 'index.html'; // Default redirect
+                    if (data.userType === 'client') {
+                        redirectUrl = 'client-dashboard.html';
+                    } else if (data.userType === 'landlord') {
+                        redirectUrl = 'landlord-dashboard.html';
+                    } else if (data.userType === 'admin') {
+                        redirectUrl = 'admin-dashboard.html';
+                    }
+
                     setTimeout(() => {
-                        window.location.href = 'index.html'; // Redirect to home page after a short delay
+                        window.location.href = redirectUrl; // Redirect based on user type
                     }, 1500); // 1.5 second delay
                 } else {
                     showMessage(data.message, 'error');
@@ -181,13 +198,14 @@
             event.preventDefault();
             
             const role = document.getElementById('registerRole').value;
-            const name = document.getElementById('registerName').value;
+            const firstName = document.getElementById('registerFirstName').value;
+            const lastName = document.getElementById('registerLastName').value;
             const email = document.getElementById('registerEmail').value;
             const password = document.getElementById('registerPassword').value;
             const confirm = document.getElementById('confirmPassword').value;
             
             // Validation
-            if (!role || !name || !email || !password || !confirm) {
+            if (!role || !firstName || !lastName || !email || !password || !confirm) {
                 showMessage('Please fill in all fields', 'error');
                 return;
             }
@@ -204,7 +222,8 @@
             
             const formData = new FormData();
             formData.append('role', role);
-            formData.append('name', name);
+            formData.append('first_name', firstName);
+            formData.append('last_name', lastName);
             formData.append('email', email);
             formData.append('password', password);
             formData.append('confirm_password', confirm);
