@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/properties.css">
     <link rel="stylesheet" href="css/utils.css">
+    <script src="js/authGuard.js"></script>
 </head>
 <body>
     <header class="header">
@@ -23,23 +24,51 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const userName = localStorage.getItem('userName');
+            const userType = localStorage.getItem('userType');
             const navAuthLink = document.getElementById('navAuthLink');
 
-            if (userName) {
-                navAuthLink.innerHTML = `Welcome, ${userName}`;
-                navAuthLink.href = '#'; // Or a user dashboard link later
-                
-                // Add a logout link
+            if (userName && userType) {
+                const loginListItem = navAuthLink.parentNode;
+                const navLinksUl = loginListItem.parentNode;
+
+                // Create the dashboard link item
+                const dashboardLink = document.createElement('a');
+                dashboardLink.textContent = `Welcome, ${userName}`;
+                if (userType === 'client') {
+                    dashboardLink.href = 'client-dashboard.html';
+                } else if (userType === 'landlord') {
+                    dashboardLink.href = 'landlord-dashboard.html';
+                } else if (userType === 'admin') {
+                    dashboardLink.href = 'admin-dashboard.html';
+                }
+                const dashboardListItem = document.createElement('li');
+                dashboardListItem.appendChild(dashboardLink);
+
+                // Create the logout link item
                 const logoutLink = document.createElement('a');
                 logoutLink.href = '#';
                 logoutLink.textContent = 'Logout';
                 logoutLink.onclick = () => {
                     localStorage.removeItem('userName');
+                    localStorage.removeItem('userType');
                     window.location.href = 'index.html'; // Redirect to home after logout
                 };
                 const logoutListItem = document.createElement('li');
                 logoutListItem.appendChild(logoutLink);
-                navAuthLink.parentNode.parentNode.appendChild(logoutListItem); // Add to ul
+
+                // Replace the 'Login' list item with the dashboard and logout links
+                navLinksUl.replaceChild(dashboardListItem, loginListItem);
+                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
+            }
+
+            // Hide "Home" and "Properties" links for landlords and admins
+            if (userType === 'landlord' || userType === 'admin') {
+                const navLinks = document.querySelectorAll('.nav-links a');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                        link.parentElement.style.display = 'none';
+                    }
+                });
             }
         });
     </script>
@@ -82,13 +111,27 @@
                     document.getElementById('properties-container').style.display = 'grid';
                     
                     properties.forEach(property => {
+                        // Construct location string from available fields
+                        const locationParts = [];
+                        if (property.address) locationParts.push(property.address);
+                        if (property.city) locationParts.push(property.city);
+                        if (property.state_province) locationParts.push(property.state_province);
+                        const location = locationParts.length > 0 ? locationParts.join(', ') : 'Location not specified';
+                        
+                        // Construct price string with currency
+                        const price = property.rent_price && property.currency 
+                            ? `${property.currency} ${parseFloat(property.rent_price).toLocaleString()}` 
+                            : 'Price not specified';
+                        
+                        // Use main_image_url if available, otherwise use a placeholder
+                        const imageUrl = property.main_image_url || 'https://placehold.co/600x400';
+                        
                         const propertyCard = `
-                            <div class="property-card">
-                                <img src="${property.image_url}" class="property-image" alt="${property.title}">
+                            <div class="property-card" onclick="window.location.href='property-details.html?id=${property.property_id}'" style="cursor: pointer;">
+                                <img src="${imageUrl}" class="property-image" alt="${property.title}">
                                 <div class="property-info">
                                     <div class="property-title">${property.title}</div>
-                                    <div class="property-location">${property.location} • ${property.price}</div>
-                                    <a href="property-details.html?id=${property.id}" class="btn">View Details</a>
+                                    <div class="property-location">${location} • ${price}</div>
                                 </div>
                             </div>
                         `;

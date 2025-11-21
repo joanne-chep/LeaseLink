@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/properties.css">
     <link rel="stylesheet" href="css/utils.css">
+    <script src="js/authGuard.js"></script>
 </head>
 <body>
     <header class="header">
@@ -23,24 +24,51 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const userName = localStorage.getItem('userName');
+            const userType = localStorage.getItem('userType');
             const navAuthLink = document.getElementById('navAuthLink');
 
-            if (userName) {
-                navAuthLink.innerHTML = `Welcome, ${userName}`;
-                navAuthLink.href = '#'; // Or a user dashboard link later
-                
-                // Add a logout link
+            if (userName && userType) {
+                const loginListItem = navAuthLink.parentNode;
+                const navLinksUl = loginListItem.parentNode;
+
+                // Create the dashboard link item
+                const dashboardLink = document.createElement('a');
+                dashboardLink.textContent = `Welcome, ${userName}`;
+                if (userType === 'client') {
+                    dashboardLink.href = 'client-dashboard.html';
+                } else if (userType === 'landlord') {
+                    dashboardLink.href = 'landlord-dashboard.html';
+                } else if (userType === 'admin') {
+                    dashboardLink.href = 'admin-dashboard.html';
+                }
+                const dashboardListItem = document.createElement('li');
+                dashboardListItem.appendChild(dashboardLink);
+
+                // Create the logout link item
                 const logoutLink = document.createElement('a');
                 logoutLink.href = '#';
                 logoutLink.textContent = 'Logout';
                 logoutLink.onclick = () => {
                     localStorage.removeItem('userName');
+                    localStorage.removeItem('userType');
                     window.location.href = 'index.html'; // Redirect to home after logout
                 };
                 const logoutListItem = document.createElement('li');
                 logoutListItem.appendChild(logoutLink);
-                navAuthLink.parentNode.parentNode.appendChild(logoutListItem); // Add to ul
 
+                // Replace the 'Login' list item with the dashboard and logout links
+                navLinksUl.replaceChild(dashboardListItem, loginListItem);
+                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
+            }
+
+            // Hide "Home" and "Properties" links for landlords and admins
+            if (userType === 'landlord' || userType === 'admin') {
+                const navLinks = document.querySelectorAll('.nav-links a');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                        link.parentElement.style.display = 'none';
+                    }
+                });
             }
         });
     </script>

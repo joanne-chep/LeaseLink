@@ -3,21 +3,29 @@ include("connect.php");
 
 // Debug: Check if form is being submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $role = $_POST['role'] ?? '';
-    $name = trim($_POST['name'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $role = filter_input(INPUT_POST, 'role', FILTER_SANITIZE_STRING);
+    $firstName = filter_input(INPUT_POST, 'first_name', FILTER_SANITIZE_STRING);
+    $lastName = filter_input(INPUT_POST, 'last_name', FILTER_SANITIZE_STRING);
+    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $password = $_POST['password'] ?? ''; // Hash password later
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-    // Debug: Show received data
-    if (empty($role) || empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
+    // Construct username
+    $username = trim($firstName . ' ' . $lastName);
+    if (empty($username)) {
+        $username = $email; // Fallback to email if name is empty
+    }
+
+    // Validate inputs
+    if (empty($role) || empty($firstName) || empty($lastName) || empty($email) || empty($password) || empty($confirm_password)) {
         echo "<div style='color: red; padding: 20px; border: 1px solid red; margin: 20px;'>";
         echo "<h3>Registration Error</h3>";
         echo "<p>Please fill all fields.</p>";
         echo "<p>Received data:</p>";
         echo "<ul>";
         echo "<li>Role: " . htmlspecialchars($role) . "</li>";
-        echo "<li>Name: " . htmlspecialchars($name) . "</li>";
+        echo "<li>First Name: " . htmlspecialchars($firstName) . "</li>";
+        echo "<li>Last Name: " . htmlspecialchars($lastName) . "</li>";
         echo "<li>Email: " . htmlspecialchars($email) . "</li>";
         echo "<li>Password: " . (empty($password) ? 'Empty' : 'Provided') . "</li>";
         echo "<li>Confirm Password: " . (empty($confirm_password) ? 'Empty' : 'Provided') . "</li>";
@@ -58,14 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-    if ($role === 'landlord') {
-        $table = 'landlords';
-    } else {
-        $table = 'clients';
-    }
-
-    // Check existing email
-    $check = $conn->prepare("SELECT id FROM $table WHERE email = ?");
+    // Check existing email in the users table
+    $check = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
     $check->bind_param('s', $email);
     $check->execute();
     $res = $check->get_result();
@@ -78,12 +80,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $stmt = $conn->prepare("INSERT INTO $table (name, email, password) VALUES (?, ?, ?)");
-    $stmt->bind_param('sss', $name, $email, $hashed);
+    // Insert into the users table
+    $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, user_type, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('ssssss', $username, $email, $hashed, $role, $firstName, $lastName);
     if ($stmt->execute()) {
         echo "<div style='color: green; padding: 20px; border: 1px solid green; margin: 20px;'>";
         echo "<h3>Registration Successful!</h3>";
-        echo "<p>Welcome, " . htmlspecialchars($name) . "!</p>";
+        echo "<p>Welcome, " . htmlspecialchars($firstName) . "!</p>";
         echo "<p>You can now <a href='../login.html'>login here</a></p>";
         echo "</div>";
     } else {

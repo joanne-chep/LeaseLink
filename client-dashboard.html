@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaseLink - Client Dashboard</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/utils.css">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .dashboard-section {
+            margin-bottom: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .dashboard-section h2 {
+            color: #8B4513;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script src="js/authGuard.js"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">LeaseLink</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="properties.html">Properties</a></li>
+                <li><a href="login.html" id="navAuthLink">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userName = localStorage.getItem('userName');
+            const userType = localStorage.getItem('userType');
+            const navAuthLink = document.getElementById('navAuthLink');
+
+            if (!userName || userType !== 'client') {
+                // If not logged in or not a client, redirect to login or home
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (userName && userType) {
+                navAuthLink.innerHTML = `Welcome, ${userName}`;
+                
+                // Set dashboard link based on user type
+                if (userType === 'client') {
+                    navAuthLink.href = 'client-dashboard.html';
+                } else if (userType === 'landlord') {
+                    navAuthLink.href = 'landlord-dashboard.html';
+                } else if (userType === 'admin') {
+                    navAuthLink.href = 'admin-dashboard.html';
+                }
+                
+                // Add a logout link
+                const logoutLink = document.createElement('a');
+                logoutLink.href = '#';
+                logoutLink.textContent = 'Logout';
+                logoutLink.onclick = () => {
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userType');
+                    window.location.href = 'index.html'; // Redirect to home after logout
+                };
+                const logoutListItem = document.createElement('li');
+                logoutListItem.appendChild(logoutLink);
+                navAuthLink.parentNode.parentNode.appendChild(logoutListItem); // Add to ul
+            }
+
+            // Hide "Home" and "Properties" links only for landlords and admins (clients should see them)
+            if (userType === 'landlord' || userType === 'admin') {
+                const navLinks = document.querySelectorAll('.nav-links a');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                        link.parentElement.style.display = 'none';
+                    }
+                });
+            }
+
+            // Display welcome message
+            document.getElementById('welcomeMessage').textContent = `Welcome, ${userName}!`;
+
+            // Load viewing requests
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                fetch(`backend/get_client_view_requests.php?userId=${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const container = document.getElementById('viewing-requests-container');
+                        if (data.success && data.requests.length > 0) {
+                            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #f5f5f5;"><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Property</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Date/Time</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Status</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Landlord Notes</th></tr></thead><tbody>';
+                            data.requests.forEach(request => {
+                                const statusColors = {
+                                    'pending': '#FFA500',
+                                    'approved': '#28a745',
+                                    'denied': '#dc3545',
+                                    'completed': '#17a2b8',
+                                    'cancelled': '#6c757d'
+                                };
+                                const statusColor = statusColors[request.status] || '#6c757d';
+                                const dateTime = new Date(request.requested_date_time).toLocaleString();
+                                html += `<tr>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <strong>${request.title}</strong><br>
+                                        <small>${request.address}, ${request.city}</small>
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${dateTime}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: ${statusColor}; font-weight: bold;">${request.status.toUpperCase()}</span></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${request.landlord_notes || 'No notes'}</td>
+                                </tr>`;
+                            });
+                            html += '</tbody></table>';
+                            container.innerHTML = html;
+                        } else {
+                            container.innerHTML = '<p>No viewing requests found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching viewing requests:', error);
+                        document.getElementById('viewing-requests-container').innerHTML = '<p style="color: red;">Error loading viewing requests.</p>';
+                    });
+
+                // Load bookings
+                fetch(`backend/get_client_bookings.php?userId=${userId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const container = document.getElementById('bookings-container');
+                        if (data.success && data.bookings.length > 0) {
+                            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #f5f5f5;"><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Property</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Start Date</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">End Date</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Monthly Rent</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Status</th></tr></thead><tbody>';
+                            data.bookings.forEach(booking => {
+                                const statusColors = {
+                                    'pending': '#FFA500',
+                                    'approved': '#28a745',
+                                    'rejected': '#dc3545',
+                                    'active': '#17a2b8',
+                                    'completed': '#6c757d',
+                                    'cancelled': '#6c757d'
+                                };
+                                const statusColor = statusColors[booking.status] || '#6c757d';
+                                const startDate = new Date(booking.start_date).toLocaleDateString();
+                                const endDate = new Date(booking.end_date).toLocaleDateString();
+                                const monthlyRent = `${booking.currency} ${parseFloat(booking.monthly_rent).toLocaleString()}`;
+                                html += `<tr>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <strong>${booking.title}</strong><br>
+                                        <small>${booking.address}, ${booking.city}</small>
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${startDate}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${endDate}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${monthlyRent}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: ${statusColor}; font-weight: bold;">${booking.status.toUpperCase()}</span></td>
+                                </tr>`;
+                            });
+                            html += '</tbody></table>';
+                            container.innerHTML = html;
+                        } else {
+                            container.innerHTML = '<p>No bookings found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching bookings:', error);
+                        document.getElementById('bookings-container').innerHTML = '<p style="color: red;">Error loading bookings.</p>';
+                    });
+            }
+        });
+    </script>
+
+    <div class="container dashboard-container">
+        <div class="dashboard-header">
+            <h1 style="color: #8B4513;">Client Dashboard</h1>
+            <p id="welcomeMessage" style="font-size: 1.2em; color: #555;"></p>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Your Viewing Requests</h2>
+            <div id="viewing-requests-container">
+                <p>Loading viewing requests...</p>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Your Current Bookings</h2>
+            <div id="bookings-container">
+                <p>Loading bookings...</p>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Your Reviews</h2>
+            <p>This section will display reviews you've submitted for properties.</p>
+            <!-- Reviews will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 LeaseLink. All rights reserved.</p>
+    </footer>
+</body>
+</html>

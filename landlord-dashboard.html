@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaseLink - Landlord Dashboard</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/utils.css">
+    <style>
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .dashboard-section {
+            margin-bottom: 40px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .dashboard-section h2 {
+            color: #8B4513;
+            margin-bottom: 20px;
+        }
+    </style>
+    <script src="js/authGuard.js"></script>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">LeaseLink</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="properties.html">Properties</a></li>
+                <li><a href="login.html" id="navAuthLink">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userName = localStorage.getItem('userName');
+            const userType = localStorage.getItem('userType');
+            const navAuthLink = document.getElementById('navAuthLink');
+
+            if (!userName || userType !== 'landlord') {
+                // If not logged in or not a landlord, redirect to login or home
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (userName && userType) {
+                const loginListItem = navAuthLink.parentNode;
+                const navLinksUl = loginListItem.parentNode;
+
+                // Create the dashboard link item
+                const dashboardLink = document.createElement('a');
+                dashboardLink.textContent = `Welcome, ${userName}`;
+                if (userType === 'client') {
+                    dashboardLink.href = 'client-dashboard.html';
+                } else if (userType === 'landlord') {
+                    dashboardLink.href = 'landlord-dashboard.html';
+                } else if (userType === 'admin') {
+                    dashboardLink.href = 'admin-dashboard.html';
+                }
+                const dashboardListItem = document.createElement('li');
+                dashboardListItem.appendChild(dashboardLink);
+
+                // Create the logout link item
+                const logoutLink = document.createElement('a');
+                logoutLink.href = '#';
+                logoutLink.textContent = 'Logout';
+                logoutLink.onclick = () => {
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userType');
+                    window.location.href = 'index.html'; // Redirect to home after logout
+                };
+                const logoutListItem = document.createElement('li');
+                logoutListItem.appendChild(logoutLink);
+
+                // Replace the 'Login' list item with the dashboard and logout links
+                navLinksUl.replaceChild(dashboardListItem, loginListItem);
+                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
+            }
+
+            // Hide "Home" and "Properties" links for landlords
+            if (userType === 'landlord' || userType === 'admin') {
+                const navLinks = document.querySelectorAll('.nav-links a');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                        link.parentElement.style.display = 'none';
+                    }
+                });
+            }
+
+            // Display welcome message
+            document.getElementById('welcomeMessage').textContent = `Welcome, ${userName}!`;
+
+            // Load viewing requests
+            const landlordId = localStorage.getItem('userId');
+            if (landlordId) {
+                fetch(`backend/get_landlord_view_requests.php?userId=${landlordId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const container = document.getElementById('landlord-viewing-requests-container');
+                        if (data.success && data.requests.length > 0) {
+                            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #f5f5f5;"><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Property</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Client</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Requested Date/Time</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Status</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Client Notes</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Actions</th></tr></thead><tbody>';
+                            data.requests.forEach(request => {
+                                const statusColors = {
+                                    'pending': '#FFA500',
+                                    'approved': '#28a745',
+                                    'denied': '#dc3545',
+                                    'completed': '#17a2b8',
+                                    'cancelled': '#6c757d'
+                                };
+                                const statusColor = statusColors[request.status] || '#6c757d';
+                                const dateTime = new Date(request.requested_date_time).toLocaleString();
+                                const actionButtons = request.status === 'pending' 
+                                    ? `<button class="btn" onclick="updateViewRequestStatus(${request.request_id}, 'approved', ${landlordId})" style="padding: 5px 10px; font-size: 0.9em; margin-right: 5px;">Approve</button>
+                                       <button class="btn btn-secondary" onclick="updateViewRequestStatus(${request.request_id}, 'denied', ${landlordId})" style="padding: 5px 10px; font-size: 0.9em;">Deny</button>`
+                                    : '<span style="color: #6c757d;">No actions available</span>';
+                                html += `<tr>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <strong>${request.title}</strong><br>
+                                        <small>${request.address}, ${request.city}</small>
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${request.client_name}<br><small>${request.client_email}</small></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${dateTime}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: ${statusColor}; font-weight: bold;">${request.status.toUpperCase()}</span></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${request.client_notes || 'No notes'}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${actionButtons}</td>
+                                </tr>`;
+                            });
+                            html += '</tbody></table>';
+                            container.innerHTML = html;
+                        } else {
+                            container.innerHTML = '<p>No viewing requests found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching viewing requests:', error);
+                        document.getElementById('landlord-viewing-requests-container').innerHTML = '<p style="color: red;">Error loading viewing requests.</p>';
+                    });
+
+                // Load bookings
+                fetch(`backend/get_landlord_bookings.php?userId=${landlordId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const container = document.getElementById('landlord-bookings-container');
+                        if (data.success && data.bookings.length > 0) {
+                            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #f5f5f5;"><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Property</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Client</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Start Date</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">End Date</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Monthly Rent</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Status</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Actions</th></tr></thead><tbody>';
+                            data.bookings.forEach(booking => {
+                                const statusColors = {
+                                    'pending': '#FFA500',
+                                    'approved': '#28a745',
+                                    'rejected': '#dc3545',
+                                    'active': '#17a2b8',
+                                    'completed': '#6c757d',
+                                    'cancelled': '#6c757d'
+                                };
+                                const statusColor = statusColors[booking.status] || '#6c757d';
+                                const startDate = new Date(booking.start_date).toLocaleDateString();
+                                const endDate = new Date(booking.end_date).toLocaleDateString();
+                                const monthlyRent = `${booking.currency || 'GHS'} ${parseFloat(booking.monthly_rent).toLocaleString()}`;
+                                const actionButtons = booking.status === 'pending' 
+                                    ? `<button class="btn" onclick="updateBookingStatus(${booking.booking_id}, 'approved', ${landlordId})" style="padding: 5px 10px; font-size: 0.9em; margin-right: 5px;">Approve</button>
+                                       <button class="btn btn-secondary" onclick="updateBookingStatus(${booking.booking_id}, 'rejected', ${landlordId})" style="padding: 5px 10px; font-size: 0.9em;">Reject</button>`
+                                    : '<span style="color: #6c757d;">No actions available</span>';
+                                html += `<tr>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">
+                                        <strong>${booking.title}</strong><br>
+                                        <small>${booking.address}, ${booking.city}</small>
+                                    </td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${booking.client_name}<br><small>${booking.client_email}</small></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${startDate}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${endDate}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${monthlyRent}</td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: ${statusColor}; font-weight: bold;">${booking.status.toUpperCase()}</span></td>
+                                    <td style="padding: 10px; border: 1px solid #ddd;">${actionButtons}</td>
+                                </tr>`;
+                            });
+                            html += '</tbody></table>';
+                            container.innerHTML = html;
+                        } else {
+                            container.innerHTML = '<p>No bookings found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching bookings:', error);
+                        document.getElementById('landlord-bookings-container').innerHTML = '<p style="color: red;">Error loading bookings.</p>';
+                    });
+            }
+
+            // Load landlord's properties
+            const landlordIdForProperties = localStorage.getItem('userId');
+            const propertiesContainer = document.getElementById('landlord-properties-container');
+            const noPropertiesMessage = document.getElementById('noPropertiesMessage');
+            const errorLoadingProperties = document.getElementById('errorLoadingProperties');
+
+            if (landlordIdForProperties) {
+                fetch(`backend/get_landlord_properties.php?userId=${landlordIdForProperties}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.properties.length > 0) {
+                            propertiesContainer.style.display = 'grid';
+                            data.properties.forEach(property => {
+                                const propertyCard = `
+                                    <div class="property-card">
+                                        <img src="${property.main_image_url || 'https://placehold.co/600x400'}" class="property-image" alt="${property.title}">
+                                        <div class="property-info">
+                                            <div class="property-title">${property.title}</div>
+                                            <div class="property-location">${property.city} • ${property.rent_price} ${property.currency}</div>
+                                            <a href="property-details.html?id=${property.property_id}" class="btn">View Details</a>
+                                        </div>
+                                    </div>
+                                `;
+                                propertiesContainer.innerHTML += propertyCard;
+                            });
+                        } else if (data.success && data.properties.length === 0) {
+                            noPropertiesMessage.style.display = 'block';
+                            propertiesContainer.style.display = 'none';
+                        } else {
+                            errorLoadingProperties.textContent = data.message || 'Failed to load properties.';
+                            errorLoadingProperties.style.display = 'block';
+                            propertiesContainer.style.display = 'none';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching landlord properties:', error);
+                        errorLoadingProperties.textContent = 'An error occurred while loading properties.';
+                        errorLoadingProperties.style.display = 'block';
+                        propertiesContainer.style.display = 'none';
+                    });
+            } else {
+                errorLoadingProperties.textContent = 'User ID not found. Please log in as a landlord.';
+                errorLoadingProperties.style.display = 'block';
+                propertiesContainer.style.display = 'none';
+            }
+        });
+
+        function updateViewRequestStatus(requestId, status, landlordId) {
+            if (!confirm(`Are you sure you want to ${status} this viewing request?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('request_id', requestId);
+            formData.append('status', status);
+            formData.append('landlord_id', landlordId);
+            formData.append('landlord_notes', '');
+
+            fetch('backend/update_view_request_status.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        function updateBookingStatus(bookingId, status, landlordId) {
+            if (!confirm(`Are you sure you want to ${status} this booking?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('booking_id', bookingId);
+            formData.append('status', status);
+            formData.append('landlord_id', landlordId);
+            formData.append('lease_agreement_url', '');
+
+            fetch('backend/update_booking_status.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    </script>
+
+    <div class="container dashboard-container">
+        <div class="dashboard-header">
+            <h1 style="color: #8B4513;">Landlord Dashboard</h1>
+            <p id="welcomeMessage" style="font-size: 1.2em; color: #555;"></p>
+            <p><a href="add-property.html" class="btn">Add New Property</a></p>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Your Listed Properties</h2>
+            <div id="landlord-properties-container" class="properties-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+                <!-- Listed properties will be dynamically loaded here -->
+            </div>
+            <p id="noPropertiesMessage" style="text-align: center; display: none;">You have not listed any properties yet. Click "Add New Property" to get started!</p>
+            <p id="errorLoadingProperties" style="text-align: center; color: red; display: none;">Failed to load properties.</p>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Viewing Requests for Your Properties</h2>
+            <div id="landlord-viewing-requests-container">
+                <p>Loading viewing requests...</p>
+            </div>
+        </div>
+
+        <div class="dashboard-section">
+            <h2>Bookings for Your Properties</h2>
+            <div id="landlord-bookings-container">
+                <p>Loading bookings...</p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 LeaseLink. All rights reserved.</p>
+    </footer>
+</body>
+</html>

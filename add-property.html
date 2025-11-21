@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaseLink - Add New Property</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/utils.css">
+    <style>
+        .form-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="url"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-group select {
+            appearance: none; /* Remove default arrow in some browsers */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-5.4H18.6c-5%200-9.3%201.8-12.9%205.4-3.6%203.6-5.4%207.9-5.4%2013.2%200%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.9%205.4%2013.2%205.4s9.6-1.8%2013.2-5.4l128-127.9c3.6-3.6%205.4-7.8%205.4-12.9%200-5.3-1.8-9.6-5.4-13.2z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 10px top 50%;
+            background-size: 12px;
+        }
+        .btn-submit {
+            background-color: #8B4513; /* A warm, inviting color */
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s ease;
+        }
+        .btn-submit:hover {
+            background-color: #A0522D; /* A slightly darker shade on hover */
+        }
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">LeaseLink</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="properties.html">Properties</a></li>
+                <li><a href="login.html" id="navAuthLink">Login</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const userName = localStorage.getItem('userName');
+            const userType = localStorage.getItem('userType');
+            const navAuthLink = document.getElementById('navAuthLink');
+
+            if (!userName || userType !== 'landlord') {
+                // If not logged in or not a landlord, redirect to login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (userName && userType) {
+                const loginListItem = navAuthLink.parentNode;
+                const navLinksUl = loginListItem.parentNode;
+
+                // Create the dashboard link item
+                const dashboardLink = document.createElement('a');
+                dashboardLink.textContent = `Welcome, ${userName}`;
+                if (userType === 'client') {
+                    dashboardLink.href = 'client-dashboard.html';
+                } else if (userType === 'landlord') {
+                    dashboardLink.href = 'landlord-dashboard.html';
+                } else if (userType === 'admin') {
+                    dashboardLink.href = 'admin-dashboard.html';
+                }
+                const dashboardListItem = document.createElement('li');
+                dashboardListItem.appendChild(dashboardLink);
+
+                // Create the logout link item
+                const logoutLink = document.createElement('a');
+                logoutLink.href = '#';
+                logoutLink.textContent = 'Logout';
+                logoutLink.onclick = () => {
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userType');
+                    window.location.href = 'index.html'; // Redirect to home after logout
+                };
+                const logoutListItem = document.createElement('li');
+                logoutListItem.appendChild(logoutLink);
+
+                // Replace the 'Login' list item with the dashboard and logout links
+                navLinksUl.replaceChild(dashboardListItem, loginListItem);
+                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
+            }
+
+            // Hide "Home" and "Properties" links for landlords
+            if (userType === 'landlord' || userType === 'admin') {
+                const navLinks = document.querySelectorAll('.nav-links a');
+                navLinks.forEach(link => {
+                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                        link.parentElement.style.display = 'none';
+                    }
+                });
+            }
+
+            // Handle form submission and image previews/descriptions
+            const addPropertyForm = document.getElementById('addPropertyForm');
+            const messageDiv = document.getElementById('message');
+            const propertyImagesInput = document.getElementById('propertyImages');
+            const imageDescriptionInputsDiv = document.getElementById('imageDescriptionInputs');
+
+            // Event listener for image file selection
+            propertyImagesInput.addEventListener('change', () => {
+                imageDescriptionInputsDiv.innerHTML = ''; // Clear previous descriptions
+                if (propertyImagesInput.files.length > 0) {
+                    Array.from(propertyImagesInput.files).forEach((file, index) => {
+                        const fileReader = new FileReader();
+                        fileReader.onload = (e) => {
+                            const imgContainer = document.createElement('div');
+                            imgContainer.classList.add('image-preview-container');
+                            imgContainer.style.marginBottom = '10px';
+                            imgContainer.style.display = 'flex';
+                            imgContainer.style.alignItems = 'center';
+
+                            const imgPreview = document.createElement('img');
+                            imgPreview.src = e.target.result;
+                            imgPreview.style.maxWidth = '100px';
+                            imgPreview.style.maxHeight = '100px';
+                            imgPreview.style.marginRight = '10px';
+                            imgPreview.style.verticalAlign = 'middle';
+                            imgPreview.style.border = '1px solid #ddd';
+                            imgPreview.style.borderRadius = '4px';
+                            imgContainer.appendChild(imgPreview);
+
+                            const descriptionInput = document.createElement('input');
+                            descriptionInput.type = 'text';
+                            descriptionInput.placeholder = `Description for ${file.name}`;
+                            descriptionInput.name = `image_descriptions[${index}]`; // Array name for backend
+                            descriptionInput.classList.add('image-description-input');
+                            descriptionInput.style.flexGrow = '1';
+                            descriptionInput.style.padding = '8px';
+                            descriptionInput.style.border = '1px solid #ddd';
+                            descriptionInput.style.borderRadius = '4px';
+                            imgContainer.appendChild(descriptionInput);
+
+                            imageDescriptionInputsDiv.appendChild(imgContainer);
+                        };
+                        fileReader.readAsDataURL(file);
+                    });
+                }
+            });
+
+            // Event listener for form submission
+            addPropertyForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                messageDiv.textContent = '';
+                messageDiv.className = 'message'; // Reset class
+
+                const formData = new FormData(addPropertyForm);
+                formData.append('landlord_id', localStorage.getItem('userId'));
+
+                // Append image descriptions manually
+                const descriptionInputs = imageDescriptionInputsDiv.querySelectorAll('.image-description-input');
+                descriptionInputs.forEach((input, index) => {
+                    formData.append(`image_descriptions[${index}]`, input.value);
+                });
+
+                // Check for at least one image file
+                if (propertyImagesInput.files.length === 0) {
+                    messageDiv.classList.add('error');
+                    messageDiv.textContent = 'Please upload at least one property image.';
+                    return;
+                }
+
+                try {
+                    const response = await fetch('backend/add_property.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        messageDiv.classList.add('success');
+                        messageDiv.textContent = 'Property added successfully!';
+                        addPropertyForm.reset(); // Clear the form
+                        imageDescriptionInputsDiv.innerHTML = ''; // Clear image previews/descriptions
+                        setTimeout(() => { window.location.href = 'landlord-dashboard.html'; }, 2000);
+                    } else {
+                        messageDiv.classList.add('error');
+                        messageDiv.textContent = result.message || 'Failed to add property.';
+                    }
+                } catch (error) {
+                    messageDiv.classList.add('error');
+                    messageDiv.textContent = 'An error occurred: ' + error.message;
+                    console.error('Error:', error);
+                }
+            });
+        });
+    </script>
+
+    <div class="container form-container">
+        <h1 style="color: #8B4513; text-align: center; margin-bottom: 30px;">Add New Property</h1>
+        <div id="message" class="message"></div>
+        <form id="addPropertyForm">
+            <div class="form-group">
+                <label for="title">Property Title</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="address">Address</label>
+                <input type="text" id="address" name="address" required>
+            </div>
+            <div class="form-group">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" required>
+            </div>
+            <div class="form-group">
+                <label for="state_province">State/Province</label>
+                <input type="text" id="state_province" name="state_province">
+            </div>
+            <div class="form-group">
+                <label for="zip_code">Zip Code</label>
+                <input type="text" id="zip_code" name="zip_code">
+            </div>
+            <div class="form-group">
+                <label for="num_bedrooms">Number of Bedrooms</label>
+                <input type="number" id="num_bedrooms" name="num_bedrooms" min="0">
+            </div>
+            <div class="form-group">
+                <label for="num_bathrooms">Number of Bathrooms</label>
+                <input type="number" id="num_bathrooms" name="num_bathrooms" step="0.5" min="0">
+            </div>
+            <div class="form-group">
+                <label for="square_footage">Square Footage</label>
+                <input type="number" id="square_footage" name="square_footage" min="0">
+            </div>
+            <div class="form-group">
+                <label for="rent_price">Rent Price</label>
+                <input type="number" id="rent_price" name="rent_price" step="0.01" min="0" required>
+            </div>
+            <div class="form-group">
+                <label for="currency">Currency</label>
+                <select id="currency" name="currency" required>
+                    <option value="GHS">GHS</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="property_type">Property Type</label>
+                <select id="property_type" name="property_type" required>
+                    <option value="apartment">Apartment</option>
+                    <option value="house">House</option>
+                    <option value="condo">Condo</option>
+                    <option value="townhouse">Townhouse</option>
+                    <option value="studio">Studio</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="propertyImages">Property Images</label>
+                <input type="file" id="propertyImages" name="property_images[]" multiple accept="image/*" required>
+            </div>
+            <div id="imageDescriptionInputs" style="margin-top: 15px;">
+                <!-- Dynamic inputs for image descriptions will go here -->
+            </div>
+            <!-- Future: Add multiple image upload inputs -->
+            <button type="submit" class="btn btn-submit">Add Property</button>
+        </form>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 LeaseLink. All rights reserved.</p>
+    </footer>
+</body>
+</html>
