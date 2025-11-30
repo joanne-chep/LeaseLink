@@ -78,6 +78,40 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        .image-preview-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            border: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .image-preview-item img {
+            max-width: 80px;
+            max-height: 80px;
+            margin-right: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            object-fit: cover;
+        }
+        .image-description-input {
+            flex-grow: 1;
+            margin-right: 15px;
+        }
+        .remove-image-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.2s;
+        }
+        .remove-image-btn:hover {
+            background-color: #c82333;
+        }
     </style>
 </head>
 <body>
@@ -154,45 +188,62 @@
             const propertyImagesInput = document.getElementById('propertyImages');
             const imageDescriptionInputsDiv = document.getElementById('imageDescriptionInputs');
 
+            let selectedFiles = new Map(); // Map to store files: key = unique ID, value = File object
+            let fileCounter = 0; // To generate unique IDs for files
+
+            // Function to render image previews
+            function renderImagePreviews() {
+                imageDescriptionInputsDiv.innerHTML = ''; // Clear existing previews
+                let index = 0;
+                selectedFiles.forEach((file, fileId) => {
+                    const fileReader = new FileReader();
+                    fileReader.onload = (e) => {
+                        const imgContainer = document.createElement('div');
+                        imgContainer.classList.add('image-preview-item');
+                        imgContainer.dataset.fileId = fileId; // Store file ID for removal
+
+                        const imgPreview = document.createElement('img');
+                        imgPreview.src = e.target.result;
+                        imgPreview.alt = file.name;
+                        imgContainer.appendChild(imgPreview);
+
+                        const descriptionInput = document.createElement('input');
+                        descriptionInput.type = 'text';
+                        descriptionInput.placeholder = `Description for ${file.name}`;
+                        descriptionInput.name = `image_descriptions[${fileId}]`; // Use fileId for unique names
+                        descriptionInput.classList.add('image-description-input');
+                        descriptionInput.value = file.description || ''; // Retain existing description
+                        imgContainer.appendChild(descriptionInput);
+
+                        const removeButton = document.createElement('button');
+                        removeButton.type = 'button';
+                        removeButton.classList.add('remove-image-btn');
+                        removeButton.textContent = 'X';
+                        removeButton.addEventListener('click', () => {
+                            selectedFiles.delete(fileId); // Remove file from map
+                            renderImagePreviews(); // Re-render previews
+                            // Clear the file input if no files are left, so "required" validation works
+                            if (selectedFiles.size === 0) {
+                                propertyImagesInput.value = '';
+                            }
+                        });
+                        imgContainer.appendChild(removeButton);
+
+                        imageDescriptionInputsDiv.appendChild(imgContainer);
+                    };
+                    fileReader.readAsDataURL(file);
+                    index++;
+                });
+            }
+
             // Event listener for image file selection
-            propertyImagesInput.addEventListener('change', () => {
-                imageDescriptionInputsDiv.innerHTML = ''; // Clear previous descriptions
-                if (propertyImagesInput.files.length > 0) {
-                    Array.from(propertyImagesInput.files).forEach((file, index) => {
-                        const fileReader = new FileReader();
-                        fileReader.onload = (e) => {
-                            const imgContainer = document.createElement('div');
-                            imgContainer.classList.add('image-preview-container');
-                            imgContainer.style.marginBottom = '10px';
-                            imgContainer.style.display = 'flex';
-                            imgContainer.style.alignItems = 'center';
-
-                            const imgPreview = document.createElement('img');
-                            imgPreview.src = e.target.result;
-                            imgPreview.style.maxWidth = '100px';
-                            imgPreview.style.maxHeight = '100px';
-                            imgPreview.style.marginRight = '10px';
-                            imgPreview.style.verticalAlign = 'middle';
-                            imgPreview.style.border = '1px solid #ddd';
-                            imgPreview.style.borderRadius = '4px';
-                            imgContainer.appendChild(imgPreview);
-
-                            const descriptionInput = document.createElement('input');
-                            descriptionInput.type = 'text';
-                            descriptionInput.placeholder = `Description for ${file.name}`;
-                            descriptionInput.name = `image_descriptions[${index}]`; // Array name for backend
-                            descriptionInput.classList.add('image-description-input');
-                            descriptionInput.style.flexGrow = '1';
-                            descriptionInput.style.padding = '8px';
-                            descriptionInput.style.border = '1px solid #ddd';
-                            descriptionInput.style.borderRadius = '4px';
-                            imgContainer.appendChild(descriptionInput);
-
-                            imageDescriptionInputsDiv.appendChild(imgContainer);
-                        };
-                        fileReader.readAsDataURL(file);
-                    });
-                }
+            propertyImagesInput.addEventListener('change', (event) => {
+                // Add new files to the Map
+                Array.from(event.target.files).forEach(file => {
+                    const fileId = `file_${fileCounter++}`;
+                    selectedFiles.set(fileId, file);
+                });
+                renderImagePreviews();
             });
 
             // Event listener for form submission
@@ -201,21 +252,26 @@
                 messageDiv.textContent = '';
                 messageDiv.className = 'message'; // Reset class
 
-                const formData = new FormData(addPropertyForm);
-                formData.append('landlord_id', localStorage.getItem('userId'));
-
-                // Append image descriptions manually
-                const descriptionInputs = imageDescriptionInputsDiv.querySelectorAll('.image-description-input');
-                descriptionInputs.forEach((input, index) => {
-                    formData.append(`image_descriptions[${index}]`, input.value);
-                });
-
-                // Check for at least one image file
-                if (propertyImagesInput.files.length === 0) {
+                if (selectedFiles.size === 0) {
                     messageDiv.classList.add('error');
                     messageDiv.textContent = 'Please upload at least one property image.';
                     return;
                 }
+
+                const formData = new FormData(addPropertyForm); // Populate formData with all form fields
+                formData.set('landlord_id', localStorage.getItem('userId')); // Use .set() to potentially overwrite if landlord_id was already in form
+
+                // Append selected files and their descriptions to formData
+                let imageIndex = 0;
+                selectedFiles.forEach((file, fileId) => {
+                    // Re-read description from the input field
+                    const descriptionInput = imageDescriptionInputsDiv.querySelector(`input[name="image_descriptions[${fileId}]"]`);
+                    const description = descriptionInput ? descriptionInput.value : '';
+
+                    formData.append(`property_images[${imageIndex}]`, file);
+                    formData.append(`image_descriptions[${imageIndex}]`, description);
+                    imageIndex++;
+                });
 
                 try {
                     const response = await fetch('backend/add_property.php', {
@@ -228,8 +284,10 @@
                     if (result.success) {
                         messageDiv.classList.add('success');
                         messageDiv.textContent = 'Property added successfully!';
-                        addPropertyForm.reset(); // Clear the form
+                        addPropertyForm.reset(); // Clear the form fields
+                        selectedFiles.clear(); // Clear selected files map
                         imageDescriptionInputsDiv.innerHTML = ''; // Clear image previews/descriptions
+                        propertyImagesInput.value = ''; // Clear the file input
                         setTimeout(() => { window.location.href = 'landlord-dashboard.html'; }, 2000);
                     } else {
                         messageDiv.classList.add('error');

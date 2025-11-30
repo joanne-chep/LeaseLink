@@ -86,7 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $main_image_url_for_property_table = $uploaded_image_paths[0]['url'] ?? null;
 
     // Prepare and bind for properties insertion
-    $stmt_property = $conn->prepare("INSERT INTO properties (landlord_id, title, description, address, city, state_province, zip_code, num_bedrooms, num_bathrooms, square_footage, rent_price, currency, property_type, main_image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $status = 'pending'; // New properties require admin approval
+    $stmt_property = $conn->prepare("INSERT INTO properties (landlord_id, title, description, address, city, state_province, zip_code, num_bedrooms, num_bathrooms, square_footage, rent_price, currency, property_type, main_image_url, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     if ($stmt_property === false) {
         $response['message'] = 'Failed to prepare property statement: ' . $conn->error;
         echo json_encode($response);
@@ -94,9 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $stmt_property->bind_param(
-        "issssssiiidsss",
+        "issssssiiidssss",
         $landlord_id, $title, $description, $address, $city, $state_province, $zip_code,
-        $num_bedrooms, $num_bathrooms, $square_footage, $rent_price, $currency, $property_type, $main_image_url_for_property_table
+        $num_bedrooms, $num_bathrooms, $square_footage, $rent_price, $currency, $property_type, $main_image_url_for_property_table, $status
     );
 
     if ($stmt_property->execute()) {

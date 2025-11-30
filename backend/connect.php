@@ -1,10 +1,10 @@
 
 <?php
 
-$db_host = "localhost:3307";
-$db_username = "root";
-$db_password = "";
-$db_name = "leaselink_db";
+$db_host = "localhost";
+$db_username = "ajak.panchol";
+$db_password = "sudo4541";
+$db_name = "webtech_2025A_ajak_panchol";
 
 
 $conn = mysqli_connect($db_host, $db_username, $db_password, $db_name);

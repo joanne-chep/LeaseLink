@@ -79,14 +79,14 @@
                 logoutLink.onclick = () => {
                     localStorage.removeItem('userName');
                     localStorage.removeItem('userType');
-                    window.location.href = 'index.html'; // Redirect to home after logout
+                    window.location.href = 'index.html'; 
                 };
                 const logoutListItem = document.createElement('li');
                 logoutListItem.appendChild(logoutLink);
 
                 // Replace the 'Login' list item with the dashboard and logout links
                 navLinksUl.replaceChild(dashboardListItem, loginListItem);
-                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
+                navLinksUl.appendChild(logoutListItem); 
             }
 
             // Hide "Home" and "Properties" links for landlords
@@ -315,7 +315,7 @@
         <div class="dashboard-section">
             <h2>Your Listed Properties</h2>
             <div id="landlord-properties-container" class="properties-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
-                <!-- Listed properties will be dynamically loaded here -->
+              
             </div>
             <p id="noPropertiesMessage" style="text-align: center; display: none;">You have not listed any properties yet. Click "Add New Property" to get started!</p>
             <p id="errorLoadingProperties" style="text-align: center; color: red; display: none;">Failed to load properties.</p>

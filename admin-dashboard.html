@@ -118,7 +118,257 @@
 
             // Display welcome message
             document.getElementById('welcomeMessage').textContent = `Welcome, ${userName}!`;
+
+            // Load admin dashboard data
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                loadAdminStats(userId);
+                loadAllUsers(userId);
+                loadAllProperties(userId);
+            }
         });
+
+        function loadAdminStats(adminId) {
+            fetch(`backend/get_admin_stats.php?userId=${adminId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.stats) {
+                        document.getElementById('totalUsers').textContent = data.stats.total_users;
+                        document.getElementById('activeProperties').textContent = data.stats.active_properties;
+                        document.getElementById('pendingViewings').textContent = data.stats.pending_viewings;
+                        document.getElementById('activeBookings').textContent = data.stats.active_bookings;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading stats:', error);
+                });
+        }
+
+        function loadAllUsers(adminId) {
+            fetch(`backend/get_all_users.php?userId=${adminId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('users-container');
+                    if (data.success && data.users.length > 0) {
+                        let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #f5f5f5;"><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ID</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Username</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Email</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Name</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Type</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Created</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Actions</th></tr></thead><tbody>';
+                        data.users.forEach(user => {
+                            const createdDate = new Date(user.created_at).toLocaleDateString();
+                            const usernameEscaped = (user.username || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const emailEscaped = (user.email || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const firstNameEscaped = (user.first_name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            const lastNameEscaped = (user.last_name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            html += `<tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.user_id}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.username}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.email}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.first_name || ''} ${user.last_name || ''}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${user.user_type}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${createdDate}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">
+                                    <button class="btn" onclick="editUser(${user.user_id}, '${usernameEscaped}', '${emailEscaped}', '${user.user_type}', '${firstNameEscaped}', '${lastNameEscaped}', ${adminId})" style="padding: 5px 10px; font-size: 0.9em; margin-right: 5px;">Edit</button>
+                                    <button class="btn btn-secondary" onclick="deleteUser(${user.user_id}, ${adminId})" style="padding: 5px 10px; font-size: 0.9em;">Delete</button>
+                                </td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p>No users found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    document.getElementById('users-container').innerHTML = '<p style="color: red;">Error loading users.</p>';
+                });
+        }
+
+        function loadAllProperties(adminId) {
+            fetch(`backend/get_all_properties.php?userId=${adminId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('properties-container');
+                    if (data.success && data.properties.length > 0) {
+                        let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;"><thead><tr style="background-color: #f5f5f5;"><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">ID</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Title</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Location</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Landlord</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Status</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Created</th><th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Actions</th></tr></thead><tbody>';
+                        data.properties.forEach(property => {
+                            const statusColors = {
+                                'available': '#28a745',
+                                'pending': '#FFA500',
+                                'inactive': '#dc3545',
+                                'rented': '#17a2b8'
+                            };
+                            const statusColor = statusColors[property.status] || '#6c757d';
+                            const createdDate = new Date(property.created_at).toLocaleDateString();
+                            const location = `${property.address}, ${property.city}`;
+                            const actionButtons = property.status === 'pending' 
+                                ? `<button class="btn" onclick="updatePropertyStatus(${property.property_id}, 'available', ${adminId})" style="padding: 5px 10px; font-size: 0.9em; margin-right: 5px;">Approve</button>
+                                   <button class="btn btn-secondary" onclick="updatePropertyStatus(${property.property_id}, 'inactive', ${adminId})" style="padding: 5px 10px; font-size: 0.9em;">Deactivate</button>`
+                                : property.status === 'available'
+                                ? `<button class="btn btn-secondary" onclick="updatePropertyStatus(${property.property_id}, 'inactive', ${adminId})" style="padding: 5px 10px; font-size: 0.9em;">Deactivate</button>`
+                                : `<button class="btn" onclick="updatePropertyStatus(${property.property_id}, 'available', ${adminId})" style="padding: 5px 10px; font-size: 0.9em;">Approve</button>`;
+                            html += `<tr>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${property.property_id}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${property.title}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${location}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${property.landlord_name}<br><small>${property.landlord_email}</small></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;"><span style="color: ${statusColor}; font-weight: bold;">${property.status.toUpperCase()}</span></td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${createdDate}</td>
+                                <td style="padding: 10px; border: 1px solid #ddd;">${actionButtons}</td>
+                            </tr>`;
+                        });
+                        html += '</tbody></table>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = '<p>No properties found.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading properties:', error);
+                    document.getElementById('properties-container').innerHTML = '<p style="color: red;">Error loading properties.</p>';
+                });
+        }
+
+        function editUser(userId, username, email, userType, firstName, lastName, adminId) {
+            const formHtml = `
+                <div id="editUserModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
+                        <h2 style="margin-top: 0; color: #8B4513;">Edit User</h2>
+                        <form id="editUserForm" onsubmit="submitUserEdit(event, ${userId}, ${adminId})">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Username:</label>
+                                <input type="text" name="username" value="${username.replace(/"/g, '&quot;')}" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Email:</label>
+                                <input type="email" name="email" value="${email.replace(/"/g, '&quot;')}" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">First Name:</label>
+                                <input type="text" name="first_name" value="${(firstName || '').replace(/"/g, '&quot;')}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Last Name:</label>
+                                <input type="text" name="last_name" value="${(lastName || '').replace(/"/g, '&quot;')}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">User Type:</label>
+                                <select name="user_type" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                                    <option value="client" ${userType === 'client' ? 'selected' : ''}>Client</option>
+                                    <option value="landlord" ${userType === 'landlord' ? 'selected' : ''}>Landlord</option>
+                                    <option value="admin" ${userType === 'admin' ? 'selected' : ''}>Admin</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn" style="flex: 1;">Save</button>
+                                <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()" style="flex: 1;">Cancel</button>
+                            </div>
+                        </form>
+                        <div id="editUserMessage" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', formHtml);
+        }
+
+        function submitUserEdit(event, userId, adminId) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            formData.append('user_id', userId);
+            formData.append('admin_id', adminId);
+            const messageDiv = document.getElementById('editUserMessage');
+            
+            fetch('backend/update_user.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.style.color = 'green';
+                    messageDiv.textContent = data.message;
+                    setTimeout(() => {
+                        closeEditUserModal();
+                        location.reload();
+                    }, 1500);
+                } else {
+                    messageDiv.style.display = 'block';
+                    messageDiv.style.color = 'red';
+                    messageDiv.textContent = data.message;
+                }
+            })
+            .catch(error => {
+                messageDiv.style.display = 'block';
+                messageDiv.style.color = 'red';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                console.error('Error:', error);
+            });
+        }
+
+        function closeEditUserModal() {
+            const modal = document.getElementById('editUserModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function deleteUser(userId, adminId) {
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('user_id', userId);
+            formData.append('admin_id', adminId);
+
+            fetch('backend/delete_user.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        function updatePropertyStatus(propertyId, status, adminId) {
+            const action = status === 'available' ? 'approve' : 'deactivate';
+            if (!confirm(`Are you sure you want to ${action} this property?`)) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('property_id', propertyId);
+            formData.append('status', status);
+            formData.append('admin_id', adminId);
+
+            fetch('backend/update_property_status.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
     </script>
 
     <div class="container dashboard-container">
@@ -130,38 +380,41 @@
         <div class="summary-cards">
             <div class="summary-card">
                 <h3>Total Users</h3>
-                <p>...</p>
+                <p id="totalUsers">...</p>
             </div>
             <div class="summary-card">
                 <h3>Active Properties</h3>
-                <p>...</p>
+                <p id="activeProperties">...</p>
             </div>
             <div class="summary-card">
                 <h3>Pending Viewings</h3>
-                <p>...</p>
+                <p id="pendingViewings">...</p>
             </div>
             <div class="summary-card">
                 <h3>Active Bookings</h3>
-                <p>...</p>
+                <p id="activeBookings">...</p>
             </div>
         </div>
 
         <div class="dashboard-section">
             <h2>User Management</h2>
             <p>List of all users (clients, landlords, admins) with options to edit/delete.</p>
-            <!-- User list will be dynamically loaded here -->
+            <div id="users-container">
+                <p>Loading users...</p>
+            </div>
         </div>
 
         <div class="dashboard-section">
             <h2>Property Moderation</h2>
             <p>Overview of all listed properties with options for approval/deactivation.</p>
-            <!-- Property list will be dynamically loaded here -->
+            <div id="properties-container">
+                <p>Loading properties...</p>
+            </div>
         </div>
 
         <div class="dashboard-section">
             <h2>System Logs & Analytics</h2>
             <p>Access to system logs, usage statistics, and other administrative tools.</p>
-            <!-- Logs and analytics will be dynamically loaded here -->
         </div>
     </div>
 

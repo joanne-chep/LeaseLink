@@ -2,146 +2,103 @@
 
 ## Prerequisites
 - XAMPP installed and running
-- Web browser (Chrome, Firefox, Safari, etc.)
+- Web browser
 
 ## Setup Instructions
 
 ### 1. Start XAMPP Services
-1. Open XAMPP Control Panel
-2. Start **Apache** and **MySQL** services
-3. Ensure both services are running (green status)
+- Open XAMPP Control Panel
+- Start Apache and MySQL services
 
 ### 2. Database Setup
-1. Open your web browser and go to: `http://localhost/phpmyadmin`
-2. Click on "Import" tab
-3. Click "Choose File" and select `database/leaselink.sql`
-4. Click "Go" to import the database
-5. Verify that `leaselink_db` database is created with the following tables:
-   - `landlords`
-   - `clients`
-   - `properties`
+1. Go to `http://localhost/phpmyadmin`
+2. Click "Import" tab
+3. Select `database/leaselink_migration.sql` (use migration file, not leaselink.sql)
+4. Click "Go" to import
+5. Verify `leaselink_db` database is created with tables: users, properties, view_requests, bookings, reviews, property_images, amenities, property_amenities
 
-### 3. Project Setup
-1. Ensure your project is in the correct directory: `C:\xampp\htdocs\LeaseLink`
-2. The project structure should be:
-   ```
-   LeaseLink/
-   ├── assets/
-   │   ├── aboutus.webp
-   │   └── perfecthome.webp
-   ├── backend/
-   │   ├── connect.php
-   │   ├── get_properties.php
-   │   ├── get_property.php
-   │   ├── login.php
-   │   └── register.php
-   ├── css/
-   │   ├── global.css
-   │   ├── login.css
-   │   ├── properties.css
-   │   └── utils.css
-   ├── database/
-   │   └── leaselink.sql
-   ├── forgot-password.html
-   ├── index.html
-   ├── login.html
-   ├── properties.html
-   ├── property-details.html
-   ├── SETUP_GUIDE.md
-   └── test_database.php
-   ```
+### 3. Database Connection
+- Open `backend/connect.php`
+- Verify settings match your XAMPP MySQL configuration (default: localhost:3307, user: root, password: empty)
+- Adjust port if needed (XAMPP often uses 3307, standard MySQL uses 3306)
 
-### 4. Access the Application
-1. Open your web browser
-2. Navigate to: `http://localhost/LeaseLink`
-3. You should see the LeaseLink homepage
+### 4. Project Setup
+- Ensure project is in `C:\xampp\htdocs\LeaseLink`
+- Create `assets/property_images/` directory with write permissions
 
-## Testing the Application
+### 5. Access Application
+- Navigate to `http://localhost/LeaseLink`
+- Homepage should load
 
-### Test User Accounts
-The database includes sample accounts for testing:
+## Testing
 
-**Landlord Account:**
-- Email: `landlord@example.com`
-- Password: `password123`
+### Test Accounts
+- **Landlord**: `landlord@example.com` / `password123`
+- **Client**: `client@example.com` / `password123`
+- **Admin**: `admin@example.com` / `password123`
 
-**Client Account:**
-- Email: `client@example.com`
-- Password: `password123`
-
-### Test Features
-1. **Homepage**: Navigate to `http://localhost/LeaseLink`
-2. **Properties**: Click "Properties" to view property listings
-3. **Property Details**: Click "View Details" on any property
-4. **Login/Register**: Click "Login/Register" to test authentication
-5. **Registration**: Create new accounts with different roles
+### Key Features to Test
+- Browse properties (only approved properties are visible)
+- Register new accounts (client or landlord)
+- Add property as landlord (requires admin approval)
+- Request viewing or book property as client
+- Approve properties as admin (Admin Dashboard → Property Moderation)
+- Manage viewing requests and bookings as landlord
 
 ## Troubleshooting
 
-### Common Issues
+### Database Connection Error
+- Ensure MySQL is running in XAMPP
+- Check credentials in `backend/connect.php`
+- Verify `leaselink_db` database exists
 
-#### 1. Database Connection Error
-- **Error**: "Connection failed"
-- **Solution**: 
-  - Ensure MySQL is running in XAMPP
-  - Check database credentials in `backend/connect.php`
-  - Verify database `leaselink_db` exists
+### Properties Not Loading
+- Properties must have status `available` to be visible (new properties are `pending`)
+- Login as admin and approve pending properties
+- Check browser console for errors
 
-#### 2. Properties Not Loading
-- **Error**: Properties page shows loading spinner indefinitely
-- **Solution**:
-  - Check if database has data in `properties` table
-  - Verify `backend/get_properties.php` is accessible
-  - Check browser console for JavaScript errors
+### Login Not Working
+- Use test accounts provided above
+- Verify database was imported correctly
 
-#### 3. Login Not Working
-- **Error**: "Invalid password" or "User not found"
-- **Solution**:
-  - Use the test accounts provided above
-  - Ensure database was imported correctly
-  - Check if password hashing is working
+### Image Upload Not Working
+- Ensure `assets/property_images/` directory exists with write permissions
+- File size limit: 5MB per image
+- Allowed formats: JPG, JPEG, PNG, GIF
 
-#### 4. Property Details Not Loading
-- **Error**: Property details page shows error
-- **Solution**:
-  - Verify property ID in URL
-  - Check if `backend/get_property.php` is working
-  - Ensure database has property data
+### Property Approval
+- New properties start as `pending` and require admin approval
+- Login as admin → Admin Dashboard → Property Moderation → Approve
 
 ### Database Verification
-To verify your database setup:
-1. Go to `http://localhost/phpmyadmin`
-2. Select `leaselink_db` database
-3. Check these tables have data:
-   - `landlords` (should have 1 record)
-   - `clients` (should have 1 record)
-   - `properties` (should have 3 records)
+- Go to `http://localhost/phpmyadmin`
+- Select `leaselink_db` database
+- Verify tables exist: users (3 records), properties (3 records), property_images, amenities, view_requests, bookings, reviews
+- If you see `landlords` or `clients` tables, you imported the wrong SQL file - use `leaselink_migration.sql`
 
 ### File Permissions
-If you encounter permission issues:
-1. Ensure XAMPP has read/write access to the project folder
-2. Check that PHP files are executable
-3. Verify file paths are correct
+- Ensure XAMPP has read/write access to project folder
+- `assets/property_images/` must have write permissions
+- Windows: Right-click folder → Properties → Security → Enable "Write"
+- Linux/Mac: `chmod 755 assets/property_images/` or `chmod 777 assets/property_images/`
 
-## Development Notes
+## Property Approval Workflow
 
-### Current Features (Sprint 1)
-- ✅ User registration and login
-- ✅ Property listings display
-- ✅ Property details view
-- ✅ Responsive design
-- ✅ Database integration
+1. Landlord adds property → Status: `pending`
+2. Property not visible → Only admins can see pending properties
+3. Admin approves property → Status: `available`
+4. Property becomes visible → Appears in public listings
+5. Clients can interact → Can request viewings or book
 
-### Future Features (Planned)
-- Property search and filtering
-- User dashboard
-- Property management for landlords
-- Booking system
-- Image upload functionality
+Note: New properties require admin approval before appearing in listings.
 
 ## Support
-If you encounter issues:
-1. Check XAMPP error logs
-2. Verify all services are running
-3. Check browser console for errors
-4. Ensure all files are in the correct locations
+
+- Check XAMPP error logs: `C:\xampp\apache\logs\error.log` and `C:\xampp\mysql\data\*.err`
+- Verify Apache and MySQL services are running
+- Check browser console for JavaScript errors (F12)
+- Verify database connection in `backend/connect.php`
+- Ensure `leaselink_migration.sql` was imported (not `leaselink.sql`)
+- Verify `assets/property_images/` directory has write permissions
+
+For more details, see `README.md`.

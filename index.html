@@ -58,10 +58,10 @@
 
                 // Replace the 'Login' list item with the dashboard and logout links
                 navLinksUl.replaceChild(dashboardListItem, loginListItem);
-                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
+                navLinksUl.appendChild(logoutListItem); 
             }
 
-            // Hide "Home" and "Properties" links for landlords and admins
+            // Hide Home and Properties links for landlords and admins
             if (userType === 'landlord' || userType === 'admin') {
                 const navLinks = document.querySelectorAll('.nav-links a');
                 navLinks.forEach(link => {
