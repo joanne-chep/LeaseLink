@@ -44,4 +44,4 @@ INSERT INTO landlords (name, email, password) VALUES
 
 INSERT INTO clients (name, email, password) VALUES
 ('Sample Client', 'client@example.com', '$2y$10$ObuyYgvTB0VtiI0qTIajf.wX2fTGMtl/GLfhj0QHQHnbVhPyeeUIe');
--- prehashed password
+

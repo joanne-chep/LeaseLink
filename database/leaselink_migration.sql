@@ -1,7 +1,4 @@
--- SQL script to migrate and create leaselink database schema for LeaseLink platform
 
--- IMPORTANT: This script will drop existing tables and recreate them.
--- Ensure you have backed up your data before running this script.
 
 CREATE DATABASE IF NOT EXISTS leaselink_db;
 USE leaselink_db;
@@ -16,8 +13,8 @@ DROP TABLE IF EXISTS amenities;
 DROP TABLE IF EXISTS property_images;
 DROP TABLE IF EXISTS properties;
 DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS landlords; -- Old table
-DROP TABLE IF EXISTS clients; -- Old table
+DROP TABLE IF EXISTS landlords;
+DROP TABLE IF EXISTS clients; 
 
 -- 1. users Table (Consolidating Client, Landlord, Admin roles)
 CREATE TABLE users (
