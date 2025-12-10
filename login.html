@@ -8,6 +8,22 @@
     <link rel="stylesheet" href="css/login.css">
     <link rel="stylesheet" href="css/utils.css">
     <script src="js/authGuard.js"></script>
+    <style>
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            user-select: none;
+            width: 24px;
+            height: 24px;
+            opacity: 0.6;
+        }
+        .password-toggle:hover {
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <header class="header">
@@ -24,7 +40,7 @@
     <div class="container login-register-form">
         <h1>LeaseLink</h1>
         
-        <!-- Login Form -->
+        
         <div id="loginForm">
             <h2>Login</h2>
             <form id="login" onsubmit="handleLogin(event)">
@@ -34,7 +50,13 @@
                 </div>
                 <div class="form-group">
                     <label>Password:</label>
-                    <input type="password" id="loginPassword" required>
+                    <div style="position: relative;">
+                        <input type="password" id="loginPassword" required style="padding-right: 40px;">
+                        <svg class="password-toggle" onclick="togglePassword('loginPassword', this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </div>
                 </div>
                 <button type="submit">Login</button>
             </form>
@@ -69,7 +91,13 @@
                 </div>
                 <div class="form-group">
                     <label>Password:</label>
-                    <input type="password" id="registerPassword" required oninput="checkPassword()">
+                    <div style="position: relative;">
+                        <input type="password" id="registerPassword" required oninput="checkPassword()" style="padding-right: 40px;">
+                        <svg class="password-toggle" onclick="togglePassword('registerPassword', this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </div>
                     <div class="password-requirements">
                         <div class="requirement" id="length">• At least 8 characters</div>
                         <div class="requirement" id="lower">• One lowercase letter</div>
@@ -80,7 +108,13 @@
                 </div>
                 <div class="form-group">
                     <label>Confirm Password:</label>
-                    <input type="password" id="confirmPassword" required oninput="checkPasswordMatch()">
+                    <div style="position: relative;">
+                        <input type="password" id="confirmPassword" required oninput="checkPasswordMatch()" style="padding-right: 40px;">
+                        <svg class="password-toggle" onclick="togglePassword('confirmPassword', this)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </div>
                     <div id="passwordMatch"></div>
                 </div>
                 <button type="submit" class="register-btn">Register</button>
@@ -98,7 +132,21 @@
     </footer>
 
     <script>
-        // Show/hide forms
+        
+        function togglePassword(fieldId, icon) {
+            const field = document.getElementById(fieldId);
+            if (field.type === 'password') {
+                field.type = 'text';
+                
+                icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+            } else {
+                field.type = 'password';
+                
+                icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+            }
+        }
+        
+        
         function showLogin() {
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('registerForm').classList.add('hidden');
@@ -109,7 +157,7 @@
             document.getElementById('registerForm').classList.remove('hidden');
         }
         
-        // Password validation
+        
         function checkPassword() {
             const password = document.getElementById('registerPassword').value;
             
@@ -164,15 +212,21 @@
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json()) // Get response as JSON
+            .then(response => {
+                // Check if response is actually JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        throw new Error('Server returned non-JSON response. Check database connection. Response: ' + text.substring(0, 100));
+                    });
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showMessage(data.message, 'success');
-                    localStorage.setItem('userName', data.userName); // Store user name
-                    localStorage.setItem('userType', data.userType); // Store user type
-                    localStorage.setItem('userId', data.userId); // Store user ID
 
-                    let redirectUrl = 'index.html'; // Default redirect
+                    let redirectUrl = 'index.html'; 
                     if (data.userType === 'client') {
                         redirectUrl = 'client-dashboard.html';
                     } else if (data.userType === 'landlord') {
@@ -182,15 +236,21 @@
                     }
 
                     setTimeout(() => {
-                        window.location.href = redirectUrl; // Redirect based on user type
-                    }, 1500); // 1.5 second delay
+                        window.location.href = redirectUrl; 
+                    }, 1500); 
                 } else {
-                    showMessage(data.message, 'error');
+                    showMessage(data.message || 'Login failed. Please check your credentials.', 'error');
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showMessage('An error occurred during login.', 'error');
+                let errorMsg = 'An error occurred during login. ';
+                if (error.message.includes('non-JSON')) {
+                    errorMsg += 'Database connection may be failing. Check backend/connect.php settings and ensure MySQL is running.';
+                } else {
+                    errorMsg += error.message;
+                }
+                showMessage(errorMsg, 'error');
             });
         }
         
@@ -204,7 +264,7 @@
             const password = document.getElementById('registerPassword').value;
             const confirm = document.getElementById('confirmPassword').value;
             
-            // Validation
+            
             if (!role || !firstName || !lastName || !email || !password || !confirm) {
                 showMessage('Please fill in all fields', 'error');
                 return;
@@ -232,14 +292,14 @@
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.text()) // Get response as text
+            .then(response => response.text()) 
             .then(data => {
-                // Check if the response contains "Registration Successful!"
+                
                 if (data.includes("Registration Successful!")) {
                     showMessage('Registration successful! You can now log in.', 'success');
-                    showLogin(); // Switch to login form
+                    showLogin(); 
                 } else {
-                    // Display the full error message from the backend
+                    
                     showMessage(data, 'error');
                 }
             })

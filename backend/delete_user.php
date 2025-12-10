@@ -8,14 +8,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $admin_id = filter_input(INPUT_POST, 'admin_id', FILTER_SANITIZE_NUMBER_INT);
     $user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
-    // Validate required fields
     if (empty($admin_id) || empty($user_id)) {
         $response['message'] = 'Missing required fields.';
         echo json_encode($response);
         exit();
     }
 
-    // Validate admin access
     $admin_check = $conn->prepare("SELECT user_type FROM users WHERE user_id = ?");
     $admin_check->bind_param('i', $admin_id);
     $admin_check->execute();
@@ -28,14 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Prevent deleting own admin account
     if ($admin_id == $user_id) {
         $response['message'] = 'You cannot delete your own admin account.';
         echo json_encode($response);
         exit();
     }
 
-    // Check if user exists
     $user_check = $conn->prepare("SELECT user_id FROM users WHERE user_id = ?");
     $user_check->bind_param('i', $user_id);
     $user_check->execute();
@@ -47,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Delete user (cascade will handle related records)
     $stmt = $conn->prepare("DELETE FROM users WHERE user_id = ?");
     if ($stmt === false) {
         $response['message'] = 'Failed to prepare statement: ' . $conn->error;

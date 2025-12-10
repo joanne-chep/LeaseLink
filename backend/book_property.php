@@ -11,14 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $end_date = filter_input(INPUT_POST, 'end_date', FILTER_SANITIZE_STRING);
     $security_deposit = filter_input(INPUT_POST, 'security_deposit', FILTER_VALIDATE_FLOAT);
 
-    // Validate required fields
+    
     if (empty($client_id) || empty($property_id) || empty($start_date) || empty($end_date)) {
         $response['message'] = 'Missing required fields.';
         echo json_encode($response);
         exit();
     }
 
-    // Validate user is a client
+   
     $user_check = $conn->prepare("SELECT user_type FROM users WHERE user_id = ?");
     $user_check->bind_param('i', $client_id);
     $user_check->execute();
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Validate property exists and is available
+    
     $property_check = $conn->prepare("SELECT property_id, rent_price, status FROM properties WHERE property_id = ?");
     $property_check->bind_param('i', $property_id);
     $property_check->execute();
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    // Validate dates
+    
     $start_timestamp = strtotime($start_date);
     $end_timestamp = strtotime($end_date);
     
@@ -66,8 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 
-    if ($start_timestamp < time()) {
-        $response['message'] = 'Start date must be in the future.';
+
+    $today_start = strtotime('today');
+    if ($start_timestamp < $today_start) {
+        $response['message'] = 'Start date cannot be in the past.';
         echo json_encode($response);
         exit();
     }
@@ -77,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $security_deposit = null;
     }
 
-    // Insert into bookings table
+    
     $stmt = $conn->prepare("INSERT INTO bookings (client_id, property_id, start_date, end_date, monthly_rent, security_deposit, status) VALUES (?, ?, ?, ?, ?, ?, 'pending')");
     if ($stmt === false) {
         $response['message'] = 'Failed to prepare statement: ' . $conn->error;

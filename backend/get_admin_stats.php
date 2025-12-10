@@ -33,21 +33,21 @@ if (isset($_GET['userId'])) {
     $users_row = $users_result->fetch_assoc();
     $total_users = $users_row['count'] ?? 0;
 
-    // Get active properties count (status = 'available')
+    // Get active properties count
     $properties_stmt = $conn->prepare("SELECT COUNT(*) as count FROM properties WHERE status = 'available'");
     $properties_stmt->execute();
     $properties_result = $properties_stmt->get_result();
     $properties_row = $properties_result->fetch_assoc();
     $active_properties = $properties_row['count'] ?? 0;
 
-    // Get pending viewings count (status = 'pending')
+    // Get pending viewings count
     $viewings_stmt = $conn->prepare("SELECT COUNT(*) as count FROM view_requests WHERE status = 'pending'");
     $viewings_stmt->execute();
     $viewings_result = $viewings_stmt->get_result();
     $viewings_row = $viewings_result->fetch_assoc();
     $pending_viewings = $viewings_row['count'] ?? 0;
 
-    // Get active bookings count (status = 'active')
+    // Get active bookings count 
     $bookings_stmt = $conn->prepare("SELECT COUNT(*) as count FROM bookings WHERE status = 'active'");
     $bookings_stmt->execute();
     $bookings_result = $bookings_stmt->get_result();

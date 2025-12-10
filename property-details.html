@@ -1,181 +1,141 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LeaseLink - Property Details</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaseLink - Property Details</title>
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/properties.css">
     <link rel="stylesheet" href="css/utils.css">
+    <link rel="stylesheet" href="css/image-carousel.css">
     <script src="js/authGuard.js"></script>
+    <script src="js/logout.js"></script>
+    <script src="js/image-carousel.js"></script>
 </head>
 <body>
-    <header class="header">
-        <nav class="nav">
-            <div class="logo">LeaseLink</div>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="properties.html">Properties</a></li>
-                <li><a href="login.html" id="navAuthLink">Login</a></li>
-            </ul>
-        </nav>
-    </header>
+    <header class="header">
+        <nav class="nav">
+            <div class="logo">LeaseLink</div>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="properties.html">Properties</a></li>
+                <li><a href="login.html" id="navAuthLink">Login</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const userName = localStorage.getItem('userName');
-            const userType = localStorage.getItem('userType');
-            const navAuthLink = document.getElementById('navAuthLink');
+    <div class="container">
+        <div class="property-details">
+            <div class="property-image-gallery">
+                <div class="main-image-container">
+                    <img id="mainPropertyImage" class="main-property-image" src="" alt="Property Main Image">
+                    <div id="mainImageDescription" class="main-image-description" style="display: none;"></div>
+                </div>
+                <div id="thumbnailImages" class="thumbnail-images">
+                                    </div>
+            </div>
+            <div class="property-content">
+                <h1 class="property-title" id="propertyTitle">Loading...</h1>
+                <div class="property-location" id="propertyLocation">Loading...</div>
+                <div class="property-price" id="propertyPrice">Loading...</div>
+                <div class="property-description" id="propertyDescription">Loading...</div>
+                
+                <button class="btn" onclick="requestTour()">Request Tour</button>
+                <button class="btn btn-secondary" onclick="bookProperty()">Book Property</button>
+      </div>
+    </div>
+  </div>
 
-            if (userName && userType) {
-                const loginListItem = navAuthLink.parentNode;
-                const navLinksUl = loginListItem.parentNode;
-
-                // Create the dashboard link item
-                const dashboardLink = document.createElement('a');
-                dashboardLink.textContent = `Welcome, ${userName}`;
-                if (userType === 'client') {
-                    dashboardLink.href = 'client-dashboard.html';
-                } else if (userType === 'landlord') {
-                    dashboardLink.href = 'landlord-dashboard.html';
-                } else if (userType === 'admin') {
-                    dashboardLink.href = 'admin-dashboard.html';
-                }
-                const dashboardListItem = document.createElement('li');
-                dashboardListItem.appendChild(dashboardLink);
-
-                // Create the logout link item
-                const logoutLink = document.createElement('a');
-                logoutLink.href = '#';
-                logoutLink.textContent = 'Logout';
-                logoutLink.onclick = () => {
-                    localStorage.removeItem('userName');
-                    localStorage.removeItem('userType');
-                    window.location.href = 'index.html'; // Redirect to home after logout
-                };
-                const logoutListItem = document.createElement('li');
-                logoutListItem.appendChild(logoutLink);
-
-                // Replace the 'Login' list item with the dashboard and logout links
-                navLinksUl.replaceChild(dashboardListItem, loginListItem);
-                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
-            }
-
-            // Hide "Home" and "Properties" links for landlords and admins
-            if (userType === 'landlord' || userType === 'admin') {
-                const navLinks = document.querySelectorAll('.nav-links a');
-                navLinks.forEach(link => {
-                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
-                        link.parentElement.style.display = 'none';
-                    }
-                });
-            }
-        });
-    </script>
-
-    <div class="container">
-        <div class="property-details">
-            <div class="property-image-gallery">
-                <div class="main-image-container">
-                    <img id="mainPropertyImage" class="main-property-image" src="" alt="Property Main Image">
-                    <div id="mainImageDescription" class="main-image-description" style="display: none;"></div>
-                </div>
-                <div id="thumbnailImages" class="thumbnail-images">
-                    <!-- Thumbnails will be loaded here -->
-                </div>
-            </div>
-            <div class="property-content">
-                <h1 class="property-title" id="propertyTitle">Loading...</h1>
-                <div class="property-location" id="propertyLocation">Loading...</div>
-                <div class="property-price" id="propertyPrice">Loading...</div>
-                <div class="property-description" id="propertyDescription">Loading...</div>
-                
-                <button class="btn" onclick="requestTour()">Request Tour</button>
-                <button class="btn btn-secondary" onclick="bookProperty()">Book Property</button>
-      </div>
-    </div>
-  </div>
-
-    <footer class="footer">
-        <p>&copy; 2025 LeaseLink. All rights reserved.</p>
-    </footer>
+    <footer class="footer">
+        <p>&copy; 2025 LeaseLink. All rights reserved.</p>
+    </footer>
 
 <script>
-        let currentImages = []; // Store all images for the gallery
+        let currentImages = []; 
+        let currentUserId = null; 
+        let currentUserType = null; 
 
-        // Function to display the main image and its description
-        function displayMainImage(imageUrl, description) {
-            const mainImageElement = document.getElementById('mainPropertyImage');
-            const mainImageDescriptionElement = document.getElementById('mainImageDescription');
+        // Function to display the main image and its description 
+        function displayMainImage(imageUrl, description) {
+            const mainImageElement = document.getElementById('mainPropertyImage');
+            const mainImageDescriptionElement = document.getElementById('mainImageDescription');
 
-            mainImageElement.src = imageUrl;
-            if (description) {
-                mainImageDescriptionElement.textContent = description;
-                mainImageDescriptionElement.style.display = 'block';
-            } else {
-                mainImageDescriptionElement.style.display = 'none';
-            }
-        }
+            mainImageElement.src = imageUrl;
+            if (description) {
+                mainImageDescriptionElement.textContent = description;
+                mainImageDescriptionElement.style.display = 'block';
+            } else {
+                mainImageDescriptionElement.style.display = 'none';
+            }
+        }
 
-        // Function to set active thumbnail
-        function setActiveThumbnail(selectedIndex) {
-            const thumbnails = document.querySelectorAll('.thumbnail-image-wrapper');
-            thumbnails.forEach((thumb, index) => {
-                if (index === selectedIndex) {
-                    thumb.classList.add('active');
-                } else {
-                    thumb.classList.remove('active');
-                }
-            });
-        }
+        // Function to set active thumbnail
+        function setActiveThumbnail(selectedIndex) {
+            const thumbnails = document.querySelectorAll('.thumbnail-image-wrapper');
+            thumbnails.forEach((thumb, index) => {
+                if (index === selectedIndex) {
+                    thumb.classList.add('active');
+                } else {
+                    thumb.classList.remove('active');
+                }
+            });
+        }
 
-        // Load property details dynamically from the backend
-        function loadProperty() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
+        // Load property details dynamically from the backend
+        function loadProperty() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
 
-            if (!id) {
-                document.getElementById('propertyTitle').textContent = 'Error';
-                document.getElementById('propertyLocation').textContent = '';
-                document.getElementById('propertyPrice').textContent = '';
-                document.getElementById('propertyDescription').textContent = 'No property ID provided.';
-                return;
-            }
+            if (!id) {
+                document.getElementById('propertyTitle').textContent = 'Error';
+                document.getElementById('propertyLocation').textContent = '';
+                document.getElementById('propertyPrice').textContent = '';
+                document.getElementById('propertyDescription').textContent = 'No property ID provided.';
+                return;
+            }
 
-            fetch(`backend/get_property.php?id=${id}`)
-                .then(response => response.json())
-                .then(property => {
-                    if (property.error) {
-                        document.getElementById('propertyTitle').textContent = 'Error';
-                        document.getElementById('propertyLocation').textContent = '';
-                        document.getElementById('propertyPrice').textContent = '';
-                        document.getElementById('propertyDescription').textContent = property.error;
-                    } else {
-                        document.getElementById('propertyTitle').textContent = property.title;
-                        
-                        // Construct location string from available fields
-                        const locationParts = [];
-                        if (property.address) locationParts.push(property.address);
-                        if (property.city) locationParts.push(property.city);
-                        if (property.state_province) locationParts.push(property.state_province);
-                        if (property.zip_code) locationParts.push(property.zip_code);
-                        const location = locationParts.length > 0 ? locationParts.join(', ') : 'Location not specified';
-                        document.getElementById('propertyLocation').textContent = location;
-                        
-                        // Format price with currency
-                        const price = property.rent_price && property.currency 
-                            ? `${property.currency} ${parseFloat(property.rent_price).toLocaleString()}` 
-                            : 'Price not specified';
-                        document.getElementById('propertyPrice').textContent = price;
-                        document.getElementById('propertyDescription').textContent = property.description;
+            fetch(`backend/get_property.php?id=${id}`)
+                .then(response => response.json())
+                .then(property => {
+                    if (property.error) {
+                        document.getElementById('propertyTitle').textContent = 'Error';
+                        document.getElementById('propertyLocation').textContent = '';
+                        document.getElementById('propertyPrice').textContent = '';
+                        document.getElementById('propertyDescription').textContent = property.error;
+                    } else {
+                        document.getElementById('propertyTitle').textContent = property.title;
+                        
+                        // Construct location string from available fields
+                        const locationParts = [];
+                        if (property.address) locationParts.push(property.address);
+                        if (property.city) locationParts.push(property.city);
+                        if (property.state_province) locationParts.push(property.state_province);
+                        if (property.zip_code) locationParts.push(property.zip_code);
+                        const location = locationParts.length > 0 ? locationParts.join(', ') : 'Location not specified';
+                        document.getElementById('propertyLocation').textContent = location;
+                        
+                        // Format price with currency
+                        const price = property.rent_price && property.currency 
+                            ? `${property.currency} ${parseFloat(property.rent_price).toLocaleString()}` 
+                            : 'Price not specified';
+                        document.getElementById('propertyPrice').textContent = price;
+                        document.getElementById('propertyDescription').textContent = property.description;
 
                         currentImages = property.images || [];
                         const thumbnailImagesContainer = document.getElementById('thumbnailImages');
+                        thumbnailImagesContainer.innerHTML = '';
 
                         if (currentImages.length > 0) {
                             // Find the main image or use the first one
                             const mainImage = currentImages.find(img => img.is_main) || currentImages[0];
                             displayMainImage(mainImage.image_url, mainImage.description);
+                            
+                            // Make main image clickable to open gallery
+                            const mainImageElement = document.getElementById('mainPropertyImage');
+                            mainImageElement.style.cursor = 'pointer';
+                            mainImageElement.onclick = () => {
+                                openImageGallery(property.property_id, currentImages);
+                            };
 
                             currentImages.forEach((img, index) => {
                                 const thumbWrapper = document.createElement('div');
@@ -193,220 +153,279 @@
                                 });
                                 thumbnailImagesContainer.appendChild(thumbWrapper);
                             });
-                            // Set initial active thumbnail
+                            
                             const initialMainIndex = currentImages.findIndex(img => img.is_main);
                             setActiveThumbnail(initialMainIndex !== -1 ? initialMainIndex : 0);
+                            
+                            
+                            if (currentImages.length > 1) {
+                                const viewAllBtn = document.createElement('button');
+                                viewAllBtn.className = 'btn';
+                                viewAllBtn.textContent = `View All ${currentImages.length} Images`;
+                                viewAllBtn.style.marginTop = '15px';
+                                viewAllBtn.onclick = () => {
+                                    openImageGallery(property.property_id, currentImages);
+                                };
+                                thumbnailImagesContainer.parentElement.appendChild(viewAllBtn);
+                            }
 
                         } else {
-                            // Display a placeholder if no images
+                            
                             displayMainImage('https://placehold.co/600x400?text=No+Image', 'No image available');
                         }
-                    }
-                })
-                .catch(error => {
-                    document.getElementById('propertyTitle').textContent = 'Error';
-                    document.getElementById('propertyLocation').textContent = '';
-                    document.getElementById('propertyPrice').textContent = '';
-                    document.getElementById('propertyDescription').textContent = 'Failed to load property details.';
-                    console.error('Error:', error);
-                    // Also display error for images
-                    displayMainImage('https://placehold.co/600x400?text=Error+Loading+Images', 'Error loading images.');
-                });
-        }
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('propertyTitle').textContent = 'Error';
+                    document.getElementById('propertyLocation').textContent = '';
+                    document.getElementById('propertyPrice').textContent = '';
+                    document.getElementById('propertyDescription').textContent = 'Failed to load property details.';
+                    console.error('Error:', error);
+                    
+                    displayMainImage('https://placehold.co/600x400?text=Error+Loading+Images', 'Error loading images.');
+                });
+        }
 
-        function requestTour() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const propertyId = urlParams.get('id');
-            const userId = localStorage.getItem('userId');
-            const userType = localStorage.getItem('userType');
+
+        function requestTour() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const propertyId = urlParams.get('id');
+            
+            if (!propertyId) {
+                alert('Error: Property ID not found.');
+                return;
+            }
+            
+            if (!currentUserId || currentUserType !== 'client') {
+                alert('Please log in as a client to request a tour.');
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            const formHtml = `
+                <div id="tourRequestModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="margin-top: 0; color: #8B4513;">Request Tour</h2>
+                        <form id="tourRequestForm" onsubmit="submitTourRequest(event)">
+                            <input type="hidden" name="property_id" value="${propertyId}">
+                            <input type="hidden" name="client_id" value="${currentUserId}"> 
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Requested Date:</label>
+                                <input type="date" name="requested_date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Requested Time:</label>
+                                <input type="time" name="requested_time" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Notes (Optional):</label>
+                                <textarea name="client_notes" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn" style="flex: 1;">Submit Request</button>
+                                <button type="button" class="btn btn-secondary" onclick="closeTourRequestModal()" style="flex: 1;">Cancel</button>
+                            </div>
+                        </form>
+                        <div id="tourRequestMessage" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', formHtml);
+        }
+
+        
+        function submitTourRequest(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('tourRequestMessage');
+            
+            fetch('backend/request_tour.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.style.color = 'green';
+                    messageDiv.textContent = data.message;
+                    setTimeout(() => {
+                        closeTourRequestModal();
+                        window.location.href = 'client-dashboard.html';
+                    }, 1500);
+                } else {
+                    messageDiv.style.display = 'block';
+                    messageDiv.style.color = 'red';
+                    messageDiv.textContent = data.message;
+                }
+            })
+            .catch(error => {
+                messageDiv.style.display = 'block';
+                messageDiv.style.color = 'red';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                console.error('Error:', error);
+            });
+        }
+
+        function closeTourRequestModal() {
+            const modal = document.getElementById('tourRequestModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function bookProperty() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const propertyId = urlParams.get('id');
+            
+            if (!propertyId) {
+                alert('Error: Property ID not found.');
+                return;
+            }
+            
+            if (!currentUserId || currentUserType !== 'client') {
+                alert('Please log in as a client to book a property.');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const rentPrice = document.getElementById('propertyPrice').textContent;
+            const priceMatch = rentPrice.match(/(\d+[\d,]*\.?\d*)/);
+            const monthlyRent = priceMatch ? priceMatch[1].replace(/,/g, '') : '';
+            
             
-            if (!propertyId) {
-                alert('Error: Property ID not found.');
-                return;
-            }
-            
-            if (!userId || userType !== 'client') {
-                alert('Please log in as a client to request a tour.');
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // Create form modal
-            const formHtml = `
-                <div id="tourRequestModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
-                        <h2 style="margin-top: 0; color: #8B4513;">Request Tour</h2>
-                        <form id="tourRequestForm" onsubmit="submitTourRequest(event)">
-                            <input type="hidden" name="property_id" value="${propertyId}">
-                            <input type="hidden" name="client_id" value="${userId}">
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Requested Date:</label>
-                                <input type="date" name="requested_date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Requested Time:</label>
-                                <input type="time" name="requested_time" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Notes (Optional):</label>
-                                <textarea name="client_notes" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                <button type="submit" class="btn" style="flex: 1;">Submit Request</button>
-                                <button type="button" class="btn btn-secondary" onclick="closeTourRequestModal()" style="flex: 1;">Cancel</button>
-                            </div>
-                        </form>
-                        <div id="tourRequestMessage" style="margin-top: 15px; display: none;"></div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', formHtml);
-        }
+            const formHtml = `
+                <div id="bookPropertyModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="margin-top: 0; color: #8B4513;">Book Property</h2>
+                        <form id="bookPropertyForm" onsubmit="submitBookingRequest(event)">
+                            <input type="hidden" name="property_id" value="${propertyId}">
+                            <input type="hidden" name="client_id" value="${currentUserId}"> 
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Start Date:</label>
+                                <input type="date" name="start_date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">End Date:</label>
+                                <input type="date" name="end_date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Monthly Rent:</label>
+                                <input type="text" value="${rentPrice}" readonly style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background-color: #f5f5f5;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Security Deposit (Optional):</label>
+                                <input type="number" name="security_deposit" step="0.01" min="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <button type="submit" class="btn" style="flex: 1;">Submit Booking</button>
+                                <button type="button" class="btn btn-secondary" onclick="closeBookPropertyModal()" style="flex: 1;">Cancel</button>
+                            </div>
+                        </form>
+                        <div id="bookPropertyMessage" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', formHtml);
+        }
 
-        function submitTourRequest(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            const messageDiv = document.getElementById('tourRequestMessage');
-            
-            fetch('backend/request_tour.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    messageDiv.style.display = 'block';
-                    messageDiv.style.color = 'green';
-                    messageDiv.textContent = data.message;
-                    setTimeout(() => {
-                        closeTourRequestModal();
-                        window.location.href = 'client-dashboard.html';
-                    }, 1500);
-                } else {
-                    messageDiv.style.display = 'block';
-                    messageDiv.style.color = 'red';
-                    messageDiv.textContent = data.message;
-                }
-            })
-            .catch(error => {
-                messageDiv.style.display = 'block';
-                messageDiv.style.color = 'red';
-                messageDiv.textContent = 'An error occurred. Please try again.';
-                console.error('Error:', error);
-            });
-        }
+       
+        function submitBookingRequest(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            const messageDiv = document.getElementById('bookPropertyMessage');
+            
+            fetch('backend/book_property.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.style.color = 'green';
+                    messageDiv.textContent = data.message;
+                    setTimeout(() => {
+                        closeBookPropertyModal();
+                        window.location.href = 'client-dashboard.html';
+                    }, 1500);
+                } else {
+                    messageDiv.style.display = 'block';
+                    messageDiv.style.color = 'red';
+                    messageDiv.textContent = data.message;
+                }
+            })
+            .catch(error => {
+                messageDiv.style.display = 'block';
+                messageDiv.style.color = 'red';
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                console.error('Error:', error);
+            });
+        }
 
-        function closeTourRequestModal() {
-            const modal = document.getElementById('tourRequestModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
+        function closeBookPropertyModal() {
+            const modal = document.getElementById('bookPropertyModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
 
-        let currentPropertyData = null; // Store property data for booking form
+        // --- Main Document Ready Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const navAuthLink = document.getElementById('navAuthLink');
+            const navLinksUl = navAuthLink ? navAuthLink.parentNode.parentNode : null;
+            const loginListItem = navAuthLink ? navAuthLink.parentNode : null;
 
-        function bookProperty() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const propertyId = urlParams.get('id');
-            const userId = localStorage.getItem('userId');
-            const userType = localStorage.getItem('userType');
-            
-            if (!propertyId) {
-                alert('Error: Property ID not found.');
-                return;
-            }
-            
-            if (!userId || userType !== 'client') {
-                alert('Please log in as a client to book a property.');
-                window.location.href = 'login.html';
-                return;
-            }
+            if (navAuthLink && navLinksUl && loginListItem) {
+                 fetch('backend/get_session_info.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        const { userName, userType, isLoggedIn, userId } = data;
+                        
+                        currentUserId = userId;
+                        currentUserType = userType;
 
-            // Get property data (rent_price and currency) from the page
-            const rentPrice = document.getElementById('propertyPrice').textContent;
-            const priceMatch = rentPrice.match(/(\d+[\d,]*\.?\d*)/);
-            const monthlyRent = priceMatch ? priceMatch[1].replace(/,/g, '') : '';
-            
-            // Create form modal
-            const formHtml = `
-                <div id="bookPropertyModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;">
-                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%;">
-                        <h2 style="margin-top: 0; color: #8B4513;">Book Property</h2>
-                        <form id="bookPropertyForm" onsubmit="submitBookingRequest(event)">
-                            <input type="hidden" name="property_id" value="${propertyId}">
-                            <input type="hidden" name="client_id" value="${userId}">
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Start Date:</label>
-                                <input type="date" name="start_date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">End Date:</label>
-                                <input type="date" name="end_date" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Monthly Rent:</label>
-                                <input type="text" value="${rentPrice}" readonly style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; background-color: #f5f5f5;">
-                            </div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Security Deposit (Optional):</label>
-                                <input type="number" name="security_deposit" step="0.01" min="0" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                <button type="submit" class="btn" style="flex: 1;">Submit Booking</button>
-                                <button type="button" class="btn btn-secondary" onclick="closeBookPropertyModal()" style="flex: 1;">Cancel</button>
-                            </div>
-                        </form>
-                        <div id="bookPropertyMessage" style="margin-top: 15px; display: none;"></div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', formHtml);
-        }
+                        if (isLoggedIn) {
+                            // Navigation update logic 
+                            const dashboardLink = document.createElement('a');
+                            dashboardLink.textContent = `Welcome, ${userName}`;
+                            let dashboardUrl = (userType === 'client') ? 'client-dashboard.html' : 
+                                               (userType === 'landlord') ? 'landlord-dashboard.html' : 
+                                               (userType === 'admin') ? 'admin-dashboard.html' : 'index.html';
+                            dashboardLink.href = dashboardUrl;
+                            const dashboardListItem = document.createElement('li');
+                            dashboardListItem.appendChild(dashboardLink);
 
-        function submitBookingRequest(event) {
-            event.preventDefault();
-            const form = event.target;
-            const formData = new FormData(form);
-            const messageDiv = document.getElementById('bookPropertyMessage');
-            
-            fetch('backend/book_property.php', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    messageDiv.style.display = 'block';
-                    messageDiv.style.color = 'green';
-                    messageDiv.textContent = data.message;
-                    setTimeout(() => {
-                        closeBookPropertyModal();
-                        window.location.href = 'client-dashboard.html';
-                    }, 1500);
-                } else {
-                    messageDiv.style.display = 'block';
-                    messageDiv.style.color = 'red';
-                    messageDiv.textContent = data.message;
-                }
-            })
-            .catch(error => {
-                messageDiv.style.display = 'block';
-                messageDiv.style.color = 'red';
-                messageDiv.textContent = 'An error occurred. Please try again.';
-                console.error('Error:', error);
-            });
-        }
+                            const logoutLink = document.createElement('a');
+                            logoutLink.href = '#';
+                            logoutLink.textContent = 'Logout';
+                            logoutLink.onclick = (e) => {
+                                e.preventDefault();
+                                performLogout();
+                            };
+                            const logoutListItem = document.createElement('li');
+                            logoutListItem.appendChild(logoutLink);
 
-        function closeBookPropertyModal() {
-            const modal = document.getElementById('bookPropertyModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
+                            navLinksUl.replaceChild(dashboardListItem, loginListItem);
+                            navLinksUl.appendChild(logoutListItem);
 
-        // Load property when page loads
-        document.addEventListener('DOMContentLoaded', loadProperty);
+                            if (userType === 'landlord' || userType === 'admin') {
+                                navLinksUl.querySelectorAll('a').forEach(link => {
+                                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                                        if (link.parentElement.tagName === 'LI') { link.parentElement.style.display = 'none'; }
+                                    }
+                                });
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating navigation:', error);
+                    });
+            }
+
+        
+            loadProperty();
+        });
 </script>
-</body>
-</html>

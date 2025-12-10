@@ -1,5 +1,12 @@
 <?php
+header('Content-Type: application/json');
+
 include("connect.php");
+
+if (!isset($conn) || !$conn) {
+    echo json_encode(['error' => 'Database connection failed. Please check your database settings.']);
+    exit;
+}
 
 if (isset($_GET['id'])) {
     $id = intval($_GET['id']);
@@ -12,7 +19,7 @@ if (isset($_GET['id'])) {
     if ($result && $result->num_rows > 0) {
         $property = $result->fetch_assoc();
 
-        // Fetch all images for the property
+       
         $images_stmt = $conn->prepare("SELECT image_url, description, is_main FROM property_images WHERE property_id = ? ORDER BY is_main DESC, image_id ASC");
         $images_stmt->bind_param('i', $id);
         $images_stmt->execute();
@@ -24,7 +31,7 @@ if (isset($_GET['id'])) {
         }
         $images_stmt->close();
 
-        $property['images'] = $images; // Add images array to property object
+        $property['images'] = $images; 
         echo json_encode($property);
     } else {
         echo json_encode(['error' => 'Property not found']);

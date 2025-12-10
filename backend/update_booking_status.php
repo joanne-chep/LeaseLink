@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Failed to update booking status: ' . $stmt->error);
         }
 
-        // If approved, update property status to 'rented'
+        // If approved, update property status to 
         if ($status === 'approved') {
             $property_update = $conn->prepare("UPDATE properties SET status = 'rented', updated_at = CURRENT_TIMESTAMP WHERE property_id = ?");
             if ($property_update === false) {

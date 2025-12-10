@@ -1,10 +1,10 @@
 <?php
 header('Content-Type: application/json');
-include 'connect.php'; // Include your database connection
+include 'connect.php'; 
 
 $response = array('success' => false, 'message' => '', 'properties' => []);
 
-// Check if landlord_id is provided in the query string
+
 if (isset($_GET['userId'])) {
     $landlord_id = filter_input(INPUT_GET, 'userId', FILTER_SANITIZE_NUMBER_INT);
 
@@ -14,11 +14,12 @@ if (isset($_GET['userId'])) {
         exit();
     }
 
-    // Prepare a statement to fetch properties for the given landlord_id
-    $stmt = $conn->prepare("SELECT p.*, pi.image_url AS main_image_url 
+
+    $stmt = $conn->prepare("SELECT p.*, COALESCE(pi.image_url, p.main_image_url) AS main_image_url 
                             FROM properties p
                             LEFT JOIN property_images pi ON p.property_id = pi.property_id AND pi.is_main = TRUE
-                            WHERE p.landlord_id = ?");
+                            WHERE p.landlord_id = ?
+                            ORDER BY p.created_at DESC");
     
     if ($stmt === false) {
         $response['message'] = 'Failed to prepare statement: ' . $conn->error;
@@ -39,7 +40,7 @@ if (isset($_GET['userId'])) {
         $response['properties'] = $properties;
     } else {
         $response['message'] = 'No properties found for this landlord.';
-        // Success is still true if no properties are found, it's just an empty list
+        
         $response['success'] = true; 
     }
 

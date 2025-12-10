@@ -13,7 +13,7 @@ if (isset($_GET['userId'])) {
         exit();
     }
 
-    // Fetch all bookings for this client with property details
+   
     $stmt = $conn->prepare("SELECT b.booking_id, b.property_id, b.start_date, b.end_date, b.monthly_rent, b.security_deposit, b.status, b.created_at,
                             p.title, p.address, p.city, p.currency
                             FROM bookings b

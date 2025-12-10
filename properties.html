@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="css/global.css">
     <link rel="stylesheet" href="css/properties.css">
     <link rel="stylesheet" href="css/utils.css">
+    <link rel="stylesheet" href="css/image-carousel.css">
     <script src="js/authGuard.js"></script>
+    <script src="js/logout.js"></script>
+    <script src="js/image-carousel.js"></script>
 </head>
 <body>
     <header class="header">
@@ -22,59 +25,108 @@
     </header>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const userName = localStorage.getItem('userName');
-            const userType = localStorage.getItem('userType');
-            const navAuthLink = document.getElementById('navAuthLink');
+    document.addEventListener('DOMContentLoaded', () => {
+        const navAuthLink = document.getElementById('navAuthLink');
+        const navLinksUl = navAuthLink ? navAuthLink.parentNode.parentNode : null;
+        const loginListItem = navAuthLink ? navAuthLink.parentNode : null;
 
-            if (userName && userType) {
-                const loginListItem = navAuthLink.parentNode;
-                const navLinksUl = loginListItem.parentNode;
+        if (!navAuthLink || !navLinksUl || !loginListItem) {
+            return;
+        }
 
-                // Create the dashboard link item
-                const dashboardLink = document.createElement('a');
-                dashboardLink.textContent = `Welcome, ${userName}`;
-                if (userType === 'client') {
-                    dashboardLink.href = 'client-dashboard.html';
-                } else if (userType === 'landlord') {
-                    dashboardLink.href = 'landlord-dashboard.html';
-                } else if (userType === 'admin') {
-                    dashboardLink.href = 'admin-dashboard.html';
-                }
-                const dashboardListItem = document.createElement('li');
-                dashboardListItem.appendChild(dashboardLink);
+        
+        fetch('backend/get_session_info.php')
+            .then(response => response.json())
+            .then(data => {
+                const { userName, userType, isLoggedIn } = data;
 
-                // Create the logout link item
-                const logoutLink = document.createElement('a');
-                logoutLink.href = '#';
-                logoutLink.textContent = 'Logout';
-                logoutLink.onclick = () => {
-                    localStorage.removeItem('userName');
-                    localStorage.removeItem('userType');
-                    window.location.href = 'index.html'; // Redirect to home after logout
-                };
-                const logoutListItem = document.createElement('li');
-                logoutListItem.appendChild(logoutLink);
-
-                // Replace the 'Login' list item with the dashboard and logout links
-                navLinksUl.replaceChild(dashboardListItem, loginListItem);
-                navLinksUl.appendChild(logoutListItem); // Add logout after dashboard link
-            }
-
-            // Hide "Home" and "Properties" links for landlords and admins
-            if (userType === 'landlord' || userType === 'admin') {
-                const navLinks = document.querySelectorAll('.nav-links a');
-                navLinks.forEach(link => {
-                    if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
-                        link.parentElement.style.display = 'none';
+                if (isLoggedIn) {
+                    
+                    const dashboardLink = document.createElement('a');
+                    dashboardLink.textContent = `Welcome, ${userName}`;
+                    let dashboardUrl = 'index.html';
+                    if (userType === 'client') {
+                        dashboardUrl = 'client-dashboard.html';
+                    } else if (userType === 'landlord') {
+                        dashboardUrl = 'landlord-dashboard.html';
+                    } else if (userType === 'admin') {
+                        dashboardUrl = 'admin-dashboard.html';
                     }
-                });
-            }
+                    dashboardLink.href = dashboardUrl;
+                    const dashboardListItem = document.createElement('li');
+                    dashboardListItem.appendChild(dashboardLink);
+
+                    
+                    const logoutLink = document.createElement('a');
+                    logoutLink.href = '#';
+                    logoutLink.textContent = 'Logout';
+                    logoutLink.onclick = (e) => {
+                        e.preventDefault();
+                        performLogout();
+                    };
+                    const logoutListItem = document.createElement('li');
+                    logoutListItem.appendChild(logoutLink);
+
+                    
+                    navLinksUl.replaceChild(dashboardListItem, loginListItem);
+                    navLinksUl.appendChild(logoutListItem);
+
+                    
+                    if (userType === 'landlord' || userType === 'admin') {
+                        const navLinks = navLinksUl.querySelectorAll('a');
+                        navLinks.forEach(link => {
+                            if (link.getAttribute('href') === 'index.html' || link.getAttribute('href') === 'properties.html') {
+                                
+                                if (link.parentElement.tagName === 'LI') {
+                                    link.parentElement.style.display = 'none';
+                                }
+                            }
+                        });
+                    }
+            
+                    if (document.getElementById('welcomeMessage')) {
+                        document.getElementById('welcomeMessage').textContent = `Welcome, ${userName}!`;
+                    }
+                    
+                }
+            })
+            .catch(error => {
+                console.error('Error updating navigation:', error);
+            });
         });
     </script>
 
     <div class="container">
         <h1>Available Properties</h1>
+        
+        <!-- Search Section -->
+        <div style="background-color: #f8f8f8; padding: 20px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <form id="searchForm" onsubmit="handleSearch(event)" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label for="searchArea" style="display: block; margin-bottom: 5px; font-weight: bold; color: #333;">Search by Area/City:</label>
+                    <input type="text" id="searchArea" placeholder="e.g., East Legon, Madina, Airport" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                </div>
+                <div style="flex: 0 0 auto; display: flex; gap: 10px;">
+                    <button type="submit" class="btn" style="padding: 10px 25px; font-size: 1em; white-space: nowrap;">Search</button>
+                    <button type="button" class="btn btn-secondary" onclick="clearSearch()" style="padding: 10px 25px; font-size: 1em; white-space: nowrap;">Clear</button>
+                </div>
+            </form>
+            <div id="searchResultsInfo" style="margin-top: 10px; color: #555; font-size: 0.9em; font-weight: 500;"></div>
+        </div>
+        
+        <style>
+            @media (max-width: 768px) {
+                #searchForm {
+                    flex-direction: column;
+                }
+                #searchForm > div {
+                    width: 100% !important;
+                }
+                #searchForm button {
+                    width: 100%;
+                }
+            }
+        </style>
         
         <div id="loading" class="text-center">
             <div class="spinner-border text-primary" role="status">
@@ -84,12 +136,17 @@
         </div>
         
         <div id="properties-container" class="properties-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
-            <!-- Properties will be loaded here -->
+            
         </div>
         
         <div id="error" class="alert alert-danger" style="display: none;">
             <h4>Error</h4>
             <p>Failed to load properties. Please try again later.</p>
+        </div>
+        
+        <div id="noResults" style="display: none; text-align: center; padding: 40px; background-color: #f8f8f8; border-radius: 8px; margin-top: 20px;">
+            <h3>No Properties Found</h3>
+            <p>No properties match your search criteria. Try searching in a different area or <a href="#" onclick="clearSearch()">view all properties</a>.</p>
         </div>
     </div>
 
@@ -98,52 +155,179 @@
     </footer>
 
     <script>
-        // Fetch properties from database
-        fetch('backend/get_properties.php')
-            .then(response => response.json())
-            .then(properties => {
-                document.getElementById('loading').style.display = 'none';
+        // Function to load images for a property
+        async function loadPropertyImages(propertyId) {
+            try {
+                const response = await fetch(`backend/get_property_images.php?property_id=${propertyId}`);
+                const data = await response.json();
+                return data.success ? data.images : [];
+            } catch (error) {
+                console.error('Error loading images:', error);
+                return [];
+            }
+        }
+
+        // Function to display properties with carousel
+        async function displayProperties(properties) {
+            const container = document.getElementById('properties-container');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const noResultsDiv = document.getElementById('noResults');
+            
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            noResultsDiv.style.display = 'none';
+            container.innerHTML = '';
+            
+            if (properties.length === 0) {
+                noResultsDiv.style.display = 'block';
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'grid';
+            
+            // Process each property
+            for (const property of properties) {
+                // Construct location string from available fields
+                const locationParts = [];
+                if (property.address) locationParts.push(property.address);
+                if (property.city) locationParts.push(property.city);
+                if (property.state_province) locationParts.push(property.state_province);
+                const location = locationParts.length > 0 ? locationParts.join(', ') : 'Location not specified';
                 
-                if (properties.length === 0) {
-                    document.getElementById('error').style.display = 'block';
-                    document.getElementById('error').innerHTML = '<h4>No Properties Available</h4><p>No properties are currently listed.</p>';
-                } else {
-                    document.getElementById('properties-container').style.display = 'grid';
-                    
-                    properties.forEach(property => {
-                        // Construct location string from available fields
-                        const locationParts = [];
-                        if (property.address) locationParts.push(property.address);
-                        if (property.city) locationParts.push(property.city);
-                        if (property.state_province) locationParts.push(property.state_province);
-                        const location = locationParts.length > 0 ? locationParts.join(', ') : 'Location not specified';
-                        
-                        // Construct price string with currency
-                        const price = property.rent_price && property.currency 
-                            ? `${property.currency} ${parseFloat(property.rent_price).toLocaleString()}` 
-                            : 'Price not specified';
-                        
-                        // Use main_image_url if available, otherwise use a placeholder
-                        const imageUrl = property.main_image_url || 'https://placehold.co/600x400';
-                        
-                        const propertyCard = `
-                            <div class="property-card" onclick="window.location.href='property-details.html?id=${property.property_id}'" style="cursor: pointer;">
-                                <img src="${imageUrl}" class="property-image" alt="${property.title}">
-                                <div class="property-info">
-                                    <div class="property-title">${property.title}</div>
-                                    <div class="property-location">${location} • ${price}</div>
-                                </div>
-                            </div>
-                        `;
-                        document.getElementById('properties-container').innerHTML += propertyCard;
-                    });
+                // Construct price string with currency
+                const price = property.rent_price && property.currency 
+                    ? `${property.currency} ${parseFloat(property.rent_price).toLocaleString()}` 
+                    : 'Price not specified';
+                
+                // Load images for this property
+                let images = await loadPropertyImages(property.property_id);
+                
+                // If no images from property_images table, use main_image_url
+                if (images.length === 0 && property.main_image_url) {
+                    images = [{ image_url: property.main_image_url, is_main: true }];
                 }
-            })
-            .catch(error => {
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('error').style.display = 'block';
-                console.error('Error:', error);
-            });
+                
+                // If still no images, use placeholder
+                if (images.length === 0) {
+                    images = [{ image_url: 'https://placehold.co/600x400?text=No+Image', is_main: true }];
+                }
+                
+                // Create unique container ID for carousel
+                const carouselContainerId = `property-carousel-${property.property_id}`;
+                
+                // Escape images JSON for HTML
+                const imagesJson = JSON.stringify(images).replace(/"/g, '&quot;');
+                
+                // Create carousel HTML
+                let carouselHtml = '';
+                if (images.length > 1) {
+                    carouselHtml = `
+                        <div class="property-image-carousel" onclick="openImageGallery(${property.property_id}, '${imagesJson}')" style="cursor: pointer;">
+                            <div class="carousel-container" id="carousel-${property.property_id}">
+                                ${images.map((img, index) => `
+                                    <div class="carousel-slide ${index === 0 ? 'active' : ''}">
+                                        <img src="${img.image_url || img}" alt="Property image ${index + 1}" loading="lazy">
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <button class="carousel-controls carousel-prev" onclick="event.stopPropagation(); slideCarousel(${property.property_id}, -1)">‹</button>
+                            <button class="carousel-controls carousel-next" onclick="event.stopPropagation(); slideCarousel(${property.property_id}, 1)">›</button>
+                            <div class="carousel-indicators" id="indicators-${property.property_id}">
+                                ${images.map((_, index) => `
+                                    <button class="carousel-indicator ${index === 0 ? 'active' : ''}" onclick="event.stopPropagation(); goToSlide(${property.property_id}, ${index})"></button>
+                                `).join('')}
+                            </div>
+                            <div class="carousel-image-count">${images.length} images</div>
+                        </div>
+                    `;
+                } else {
+                    // Single image - still clickable to open gallery
+                    carouselHtml = `<div class="property-image-carousel" onclick="openImageGallery(${property.property_id}, '${imagesJson}')" style="cursor: pointer;">
+                        <img src="${images[0].image_url || images[0]}" alt="${property.title}" style="width: 100%; height: 200px; object-fit: cover;">
+                    </div>`;
+                }
+                
+                const propertyCard = `
+                    <div class="property-card" data-property-id="${property.property_id}">
+                        ${carouselHtml}
+                        <div class="property-info" onclick="window.location.href='property-details.html?id=${property.property_id}'" style="cursor: pointer;">
+                            <div class="property-title">${property.title}</div>
+                            <div class="property-location">${location} • ${price}</div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += propertyCard;
+                
+                // Start auto-play for carousel if multiple images
+                if (images.length > 1) {
+                    setTimeout(() => {
+                        startCarouselAutoPlay(property.property_id, 4000);
+                    }, 100);
+                }
+            }
+        }
+
+        // Function to fetch and display properties
+        function loadProperties(searchArea = '') {
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const resultsInfo = document.getElementById('searchResultsInfo');
+            
+            loadingDiv.style.display = 'block';
+            errorDiv.style.display = 'none';
+            
+            // Build URL with search parameter if provided
+            let url = 'backend/get_properties.php';
+            if (searchArea) {
+                url = `backend/search_properties.php?city=${encodeURIComponent(searchArea)}`;
+            }
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const properties = data.properties || data; 
+                    const count = data.count !== undefined ? data.count : properties.length;
+                    
+                    
+                    if (searchArea) {
+                        resultsInfo.innerHTML = count > 0 
+                            ? `<strong>Found ${count} propert${count === 1 ? 'y' : 'ies'}</strong> in ${searchArea}`
+                            : `<strong>No properties found</strong> in ${searchArea}`;
+                    } else {
+                        resultsInfo.innerHTML = count > 0 
+                            ? `<strong>Showing ${count} propert${count === 1 ? 'y' : 'ies'}</strong>`
+                            : '';
+                    }
+                    
+                    displayProperties(properties);
+                })
+                .catch(error => {
+                    loadingDiv.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                    console.error('Error:', error);
+                });
+        }
+
+        // Handle search form submission
+        function handleSearch(event) {
+            event.preventDefault();
+            const searchArea = document.getElementById('searchArea').value.trim();
+            loadProperties(searchArea);
+        }
+
+        // Clear search and show all properties
+        function clearSearch() {
+            document.getElementById('searchArea').value = '';
+            document.getElementById('searchResultsInfo').innerHTML = '';
+            loadProperties('');
+        }
+
+        // Load properties on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProperties('');
+        });
     </script>
 </body>
 </html>

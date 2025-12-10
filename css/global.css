@@ -59,7 +59,7 @@ h1,h2,h3,h5 {
     text-align: center;
     padding: 80px 20px 150px; 
     position: relative;
-    min-height: 100vh; /* Make the hero section occupy the entire screen height */
+    min-height: 100vh; 
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -85,13 +85,13 @@ h1,h2,h3,h5 {
 .hero h1 {
     font-size: 48px;
     margin-bottom: 20px;
-    color: white; /* Ensure heading is white */
+    color: white;
 }
 
 .hero p {
     font-size: 20px;
     margin-bottom: 30px;
-    color: white; /* Ensure paragraph is white */
+    color: white;
 }
 
 .btn {

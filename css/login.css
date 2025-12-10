@@ -1,4 +1,3 @@
-/* Styles for login/register container */
 .container.login-register-form {
     max-width: 400px;
     margin: 50px auto;
@@ -9,7 +8,7 @@
     border: 1px solid rgba(210, 105, 30, 0.1);
 }
 
-/* Button styles */
+
 button {
     width: 100%;
     padding: 12px;
@@ -39,7 +38,6 @@ button:hover {
     background: linear-gradient(135deg, #A0522D 0%, #CD853F 100%);
 }
 
-/* Form specific styles */
 .form-group {
     margin-bottom: 20px;
 }

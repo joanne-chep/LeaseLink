@@ -1,22 +1,22 @@
 <?php
 include("connect.php");
 
-// Debug: Check if form is being submitted
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $role = filter_input(INPUT_POST, 'role', FILTER_SANITIZE_STRING);
     $firstName = filter_input(INPUT_POST, 'first_name', FILTER_SANITIZE_STRING);
     $lastName = filter_input(INPUT_POST, 'last_name', FILTER_SANITIZE_STRING);
     $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $password = $_POST['password'] ?? ''; // Hash password later
+    $password = $_POST['password'] ?? ''; 
     $confirm_password = $_POST['confirm_password'] ?? '';
 
-    // Construct username
+    
     $username = trim($firstName . ' ' . $lastName);
     if (empty($username)) {
-        $username = $email; // Fallback to email if name is empty
+        $username = $email;
     }
 
-    // Validate inputs
+    
     if (empty($role) || empty($firstName) || empty($lastName) || empty($email) || empty($password) || empty($confirm_password)) {
         echo "<div style='color: red; padding: 20px; border: 1px solid red; margin: 20px;'>";
         echo "<h3>Registration Error</h3>";
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Validate password confirmation
+    
     if ($password !== $confirm_password) {
         echo "<div style='color: red; padding: 20px; border: 1px solid red; margin: 20px;'>";
         echo "<h3>Registration Error</h3>";
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Validate password strength
+    
     if (strlen($password) < 8) {
         echo "<div style='color: red; padding: 20px; border: 1px solid red; margin: 20px;'>";
         echo "<h3>Registration Error</h3>";
@@ -55,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/', $password)) {
+    if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/', $password)) {
         echo "<div style='color: red; padding: 20px; border: 1px solid red; margin: 20px;'>";
         echo "<h3>Registration Error</h3>";
         echo "<p>Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&).</p>";
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $hashed = password_hash($password, PASSWORD_DEFAULT);
 
-    // Check existing email in the users table
+    
     $check = $conn->prepare("SELECT user_id FROM users WHERE email = ?");
     $check->bind_param('s', $email);
     $check->execute();
@@ -80,9 +80,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Insert into the users table
-    $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, user_type, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param('ssssss', $username, $email, $hashed, $role, $firstName, $lastName);
+  
+    $approval_status = ($role === 'landlord') ? 'pending' : 'approved';
+    
+   
+    $stmt = $conn->prepare("INSERT INTO users (username, email, password_hash, user_type, first_name, last_name, approval_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param('sssssss', $username, $email, $hashed, $role, $firstName, $lastName, $approval_status);
     if ($stmt->execute()) {
         echo "<div style='color: green; padding: 20px; border: 1px solid green; margin: 20px;'>";
         echo "<h3>Registration Successful!</h3>";

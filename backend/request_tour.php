@@ -47,9 +47,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Combine date and time
     $requested_date_time = $requested_date . ' ' . $requested_time . ':00';
     
-    // Validate date is in the future
-    if (strtotime($requested_date_time) <= time()) {
-        $response['message'] = 'Requested date and time must be in the future.';
+    
+    $min_time = time() + 3600; 
+    if (strtotime($requested_date_time) < $min_time) {
+        $response['message'] = 'Requested date and time must be at least 1 hour from now.';
         echo json_encode($response);
         exit();
     }

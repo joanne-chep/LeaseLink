@@ -13,7 +13,7 @@ if (isset($_GET['userId'])) {
         exit();
     }
 
-    // Fetch all view_requests for this client with property details
+    
     $stmt = $conn->prepare("SELECT vr.request_id, vr.property_id, vr.requested_date_time, vr.status, vr.landlord_notes, vr.client_notes, vr.created_at,
                             p.title, p.address, p.city, p.rent_price, p.currency
                             FROM view_requests vr

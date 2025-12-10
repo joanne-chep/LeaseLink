@@ -13,7 +13,6 @@ if (isset($_GET['userId'])) {
         exit();
     }
 
-    // Validate user is an admin
     $user_check = $conn->prepare("SELECT user_type FROM users WHERE user_id = ?");
     $user_check->bind_param('i', $admin_id);
     $user_check->execute();
@@ -26,7 +25,7 @@ if (isset($_GET['userId'])) {
         exit();
     }
 
-    // Fetch all properties with landlord info
+    
     $stmt = $conn->prepare("SELECT p.property_id, p.title, p.address, p.city, p.status, p.landlord_id, p.created_at,
                             u.username AS landlord_name, u.email AS landlord_email
                             FROM properties p
