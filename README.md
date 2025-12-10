@@ -33,7 +33,7 @@ To run the project, you need:
 
 ## Getting Started
 
-Run this link on your browser:   http://169.239.251.102:341/~ajak.panchol/uploads/LeaseLink/index.html
+Run this link on your browser:   http://169.239.251.102:341/~ajak.panchol/uploads/LeaseLink_/index.html
 
 ---
 
